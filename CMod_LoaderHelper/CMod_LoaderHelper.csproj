@@ -92,7 +92,7 @@
   </Target>
   
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="call &quot;$(SolutionDir)integrate.bat&quot;" />
+    <!--<Exec Command="call &quot;$(SolutionDir)integrate.bat&quot;" />-->
   </Target>
 
 </Project>

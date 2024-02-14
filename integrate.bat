@@ -1,16 +1,14 @@
-set SolutionDir=%1
-set Platform=%2
-set Configuration=%3
+set solution_dir=%1
+set platform=%2
+set configuration=%3
+@REM without end slash
+set cosmoteer_bin_dir_path=%4
+@REM without end slash
+set cmod_loader_mod_dir_path=%5
 
-set loader_dir_src_path=%SolutionDir%%Platform%%Configuration%
-echo %loader_dir_src_path%
-
-exit
-
-set helper_dir_src_path="C:\Users\aliser\Desktop\repos\CMod_Loader\CMod_LoaderHelper\bin\Release\net7.0-windows"
-set loader_mod_dir_dist_path="C:\Users\aliser\Saved Games\Cosmoteer\76561198068709671\Mods\cmod_loader"
-set game_bin_dir_path="C:\Program Files (x86)\Steam\steamapps\common\Cosmoteer\Bin"
-
+set release_dir_path=%solution_dir%%platform%"\"%configuration%"\"
+set helper_release_dir_path=%solution_dir%"CMod_LoaderHelper\bin\"%configuration%"\net7.0-windows\"
+set mod_installer_script_filename="install.bat"
 
 @REM =================
 
@@ -21,6 +19,7 @@ tasklist | find "Cosmoteer.exe" >nul: && goto kill_cosmoteer_process
 goto skip_cosmoteer_taskkill
 
 :kill_cosmoteer_process
+echo [info]: killing cosmoteer process
 
 @REM stop cosmoteer process
 taskkill /f /im cosmoteer.exe /FI "STATUS eq RUNNING"
@@ -28,24 +27,55 @@ taskkill /f /im cosmoteer.exe /FI "STATUS eq RUNNING"
 @REM sleep for N - 1 seconds, so that the cosmoteer process can properly end
 ping 127.0.0.1 -n 3 > nul
 
+:skip_cosmoteer_taskkill
+@REM =================
+
+@REM copy the loader dll and files, and rename them to a dll that the game gonna load
+echo [info]: copying cmod loader dll and files
+
+set from=%release_dir_path%"CMod_Loader.dll"
+set to=%cmod_loader_mod_dir_path%"\AVRT.dll"
+echo [info]: from %from%
+echo [info]: to %to%
+copy %from% %to%
+
+set from=%cmod_loader_mod_dir_path%"\AVRT.pdb"
+set to=%release_dir_path%"CMod_Loader.pdb"
+echo [info]: from %from%
+echo [info]: to %to%
+copy %from% %to%
+
+
+@REM get the helper dll and files
+echo [info]: copying cmod loader helper dll and files
+
+set from=%helper_release_dir_path%"CMod_LoaderHelper.dll"
+set to=%cmod_loader_mod_dir_path%"\bin"
+echo [info]: from %from%
+echo [info]: to %to%
+copy %from% %to%
+
+set from=%helper_release_dir_path%"CMod_LoaderHelper.pdb"
+set to=%cmod_loader_mod_dir_path%"\bin"
+echo [info]: from %from%
+echo [info]: to %to%
+copy %from% %to%
+
+set from=%helper_release_dir_path%"CMod_LoaderHelper.runtimeconfig.json"
+set to=%cmod_loader_mod_dir_path%"\bin"
+echo [info]: from %from%
+echo [info]: to %to%
+copy %from% %to%
+
+
+@REM run the installer and echo a string to skip the pause
+echo [info]: running cmod loader install
+echo | call %cmod_loader_mod_dir_path%%mod_installer_script_filename%
+@echo pause skip
 
 @REM =================
 
 
-@REM copy stuff in
-copy %loader_dir_src_path%"\CMod_Loader.dll" %loader_mod_dir_dist_path%"\AVRT.dll"
-copy %loader_dir_src_path%"\CMod_Loader.pdb" %loader_mod_dir_dist_path%"\AVRT.pdb"
-
-copy %helper_dir_src_path%"\CMod_LoaderHelper.dll" %loader_mod_dir_dist_path%"\bin"
-copy %helper_dir_src_path%"\CMod_LoaderHelper.pdb" %loader_mod_dir_dist_path%"\bin"
-copy %helper_dir_src_path%"\CMod_LoaderHelper.runtimeconfig.json" %loader_mod_dir_dist_path%"\bin"
-
-copy %loader_mod_dir_dist_path%"\AVRT.dll" %game_bin_dir_path%
-copy %loader_mod_dir_dist_path%"\AVRT.pdb" %game_bin_dir_path%
-
-
-@REM =================
-
-
-@REM restart cosmoteer 
-start "" "C:\Program Files (x86)\Steam\steamapps\common\Cosmoteer\Bin\Cosmoteer.exe" --devmode
+@REM start cosmoteer 
+echo [info]: starting cosmoteer
+start "" %cosmoteer_bin_dir_path%"\Cosmoteer.exe" --devmode

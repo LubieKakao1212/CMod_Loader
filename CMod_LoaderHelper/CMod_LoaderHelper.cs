@@ -16,7 +16,7 @@ namespace System.Runtime.CompilerServices {
     }
 }
 
-// this helper finds present cmods and saves paths to them into a file,
+// this helper finds present cmods and saves paths to them into a file, 
 // for the dll injector to use
 
 namespace CMod_LoaderHelper {

@@ -3,6 +3,20 @@
 
 *Heavily based on [EnhancedModLoader](https://github.com/C0dingschmuser/EnhancedModLoader) by C0dingschmuser & eamondo2*
 
+
+
+
+TODO:
+If the loader is present both locally (in user mods directory) and downloaded from the Workshop, the local version will be used.
+- add workshop folder mods support
+- check out the install script, what is it
+- describe used project macros
+
+
+
+
+
+
 ### --- Installation ---
 1. Subscribe to this Mod on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2937901869)  
 2. Navigate to your Cosmoteer Workshop directory.  
@@ -88,15 +102,6 @@ namespace System.Runtime.CompilerServices
 Since we cannot use Harmony, there are some workarounds required to mod Cosmoteer.  
 Here's [a simple example](https://github.com/C0dingschmuser/EML_TestMod) on how to get a simple loop, keyboard detection and custom window up and running.  
 For more advanced use, see source of my [Weapon Projectile Spawner Mod](https://github.com/C0dingschmuser/ProjectileSpawner)
-
-
-### --- Other stuff ---
-If the loader is present both locally (in user mods directory) and downloaded from the Workshop, the local version will be used.
-
-
-TODO:
-- add workshop folder mods support
-- check out the install script, what is it
 
 
 ### --- License ---

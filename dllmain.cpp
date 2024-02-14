@@ -41,331 +41,333 @@ using json = nlohmann::json;
 class Module
 {
 public:
-    static void* getBaseAddress(const char* library)
-    {
+	static void* getBaseAddress(const char* library)
+	{
 #ifdef _WIN32
-        auto base = GetModuleHandleA(library);
+		auto base = GetModuleHandleA(library);
 #else
-        auto base = dlopen(library, RTLD_LAZY);
+		auto base = dlopen(library, RTLD_LAZY);
 #endif
-        return reinterpret_cast<void*>(base);
-    }
+		return reinterpret_cast<void*>(base);
+	}
 
-    static void* getExportByName(void* module, const char* name)
-    {
+	static void* getExportByName(void* module, const char* name)
+	{
 #ifdef _WIN32
-        auto address = GetProcAddress((HMODULE)module, name);
+		auto address = GetProcAddress((HMODULE)module, name);
 #else
-        auto address = dlsym(module, name);
+		auto address = dlsym(module, name);
 #endif
-        return reinterpret_cast<void*>(address);
-    }
+		return reinterpret_cast<void*>(address);
+	}
 
-    template<typename T>
-    static T getFunctionByName(void* module, const char* name)
-    {
-        return reinterpret_cast<T>(getExportByName(module, name));
-    }
+	template<typename T>
+	static T getFunctionByName(void* module, const char* name)
+	{
+		return reinterpret_cast<T>(getExportByName(module, name));
+	}
 };
 
 enum class InitializeResult : uint32_t
 {
-    Success,
-    HostFxrLoadError,
-    InitializeRuntimeConfigError,
-    GetRuntimeDelegateError,
-    EntryPointError,
+	Success,
+	HostFxrLoadError,
+	InitializeRuntimeConfigError,
+	GetRuntimeDelegateError,
+	EntryPointError,
 };
 
 InitializeResult LoadDll(const char_t* runtime_config_path, const char_t* assembly_path, const char_t* type_name, const char_t* method_name)
 {
-    /// Get module base address
+	/// Get module base address
 #ifdef _WIN32
-    auto libraryName = "hostfxr.dll";
+	auto libraryName = "hostfxr.dll";
 #else
-    auto libraryName = "libhostfxr.so";
+	auto libraryName = "libhostfxr.so";
 #endif
-    void* module = Module::getBaseAddress(libraryName);
-    if (!module)
-    {
-        return InitializeResult::HostFxrLoadError;
-    }
+	void* module = Module::getBaseAddress(libraryName);
+	if (!module)
+	{
+		return InitializeResult::HostFxrLoadError;
+	}
 
-    /// Obtaining useful exports
-    auto hostfxr_initialize_for_runtime_config_fptr =
-        Module::getFunctionByName<hostfxr_initialize_for_runtime_config_fn>(module, "hostfxr_initialize_for_runtime_config");
+	/// Obtaining useful exports
+	auto hostfxr_initialize_for_runtime_config_fptr =
+		Module::getFunctionByName<hostfxr_initialize_for_runtime_config_fn>(module, "hostfxr_initialize_for_runtime_config");
 
-    auto hostfxr_get_runtime_delegate_fptr =
-        Module::getFunctionByName<hostfxr_get_runtime_delegate_fn>(module, "hostfxr_get_runtime_delegate");
+	auto hostfxr_get_runtime_delegate_fptr =
+		Module::getFunctionByName<hostfxr_get_runtime_delegate_fn>(module, "hostfxr_get_runtime_delegate");
 
-    auto hostfxr_close_fptr =
-        Module::getFunctionByName<hostfxr_close_fn>(module, "hostfxr_close");
+	auto hostfxr_close_fptr =
+		Module::getFunctionByName<hostfxr_close_fn>(module, "hostfxr_close");
 
-    /// Load runtime config
-    hostfxr_handle ctx = nullptr;
-    int rc = hostfxr_initialize_for_runtime_config_fptr(runtime_config_path, nullptr, &ctx);
+	/// Load runtime config
+	hostfxr_handle ctx = nullptr;
+	int rc = hostfxr_initialize_for_runtime_config_fptr(runtime_config_path, nullptr, &ctx);
 
-    /// Success_HostAlreadyInitialized = 0x00000001
-    /// @see https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
-    if (rc != 1 || ctx == nullptr)
-    {
-        hostfxr_close_fptr(ctx);
-        return InitializeResult::InitializeRuntimeConfigError;
-    }
+	/// Success_HostAlreadyInitialized = 0x00000001
+	/// @see https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
+	if (rc != 1 || ctx == nullptr)
+	{
+		hostfxr_close_fptr(ctx);
+		return InitializeResult::InitializeRuntimeConfigError;
+	}
 
-    /// From docs: native function pointer to the requested runtime functionality
-    void* delegate = nullptr;
-    int ret = hostfxr_get_runtime_delegate_fptr(ctx, hostfxr_delegate_type::hdt_load_assembly_and_get_function_pointer,
-        &delegate);
+	/// From docs: native function pointer to the requested runtime functionality
+	void* delegate = nullptr;
+	int ret = hostfxr_get_runtime_delegate_fptr(ctx, hostfxr_delegate_type::hdt_load_assembly_and_get_function_pointer,
+		&delegate);
 
-    if (ret != 0 || delegate == nullptr)
-    {
-        return InitializeResult::GetRuntimeDelegateError;
-    }
+	if (ret != 0 || delegate == nullptr)
+	{
+		return InitializeResult::GetRuntimeDelegateError;
+	}
 
-    /// `void *` -> `load_assembly_and_get_function_pointer_fn`, undocumented???
-    auto load_assembly_fptr = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(delegate);
+	/// `void *` -> `load_assembly_and_get_function_pointer_fn`, undocumented???
+	auto load_assembly_fptr = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(delegate);
 
-    typedef void (CORECLR_DELEGATE_CALLTYPE* custom_entry_point_fn)();
-    custom_entry_point_fn custom = nullptr;
+	typedef void (CORECLR_DELEGATE_CALLTYPE* custom_entry_point_fn)();
+	custom_entry_point_fn custom = nullptr;
 
-    ret = load_assembly_fptr(assembly_path, type_name, method_name, UNMANAGEDCALLERSONLY_METHOD, nullptr,
-        (void**)&custom);
+	ret = load_assembly_fptr(assembly_path, type_name, method_name, UNMANAGEDCALLERSONLY_METHOD, nullptr,
+		(void**)&custom);
 
-    if (ret != 0 || custom == nullptr)
-    {
-        return InitializeResult::EntryPointError;
-    }
+	if (ret != 0 || custom == nullptr)
+	{
+		return InitializeResult::EntryPointError;
+	}
 
-    custom();
+	custom();
 
-    hostfxr_close_fptr(ctx);
+	hostfxr_close_fptr(ctx);
+
+	return InitializeResult::Success;
 }
 
 std::string InitResultToStr(InitializeResult result)
 {
-    std::string data;
+	std::string data;
 
-    switch (result)
-    {
-        case InitializeResult::Success:
-			data = "Success";
-			break;
-        case InitializeResult::HostFxrLoadError:
-            data = "HostFxrLoadError";
-            break;
-        case InitializeResult::InitializeRuntimeConfigError:
-			data = "InitializeRuntimeConfigError";
-			break;
-        case InitializeResult::GetRuntimeDelegateError:
-            data = "GetRuntimeDelegateError";
-            break;
-        case InitializeResult::EntryPointError:
-            data = "EntryPointError";
-            break;
-    }
+	switch (result)
+	{
+	case InitializeResult::Success:
+		data = "Success";
+		break;
+	case InitializeResult::HostFxrLoadError:
+		data = "HostFxrLoadError";
+		break;
+	case InitializeResult::InitializeRuntimeConfigError:
+		data = "InitializeRuntimeConfigError";
+		break;
+	case InitializeResult::GetRuntimeDelegateError:
+		data = "GetRuntimeDelegateError";
+		break;
+	case InitializeResult::EntryPointError:
+		data = "EntryPointError";
+		break;
+	}
 
-    return data;
+	return data;
 }
 
 void LogLine(std::string path, std::string line, bool newLine = true)
 {
-    std::ofstream log(path, std::ios_base::app | std::ios_base::out);
-    log << line;
+	std::ofstream log(path, std::ios_base::app | std::ios_base::out);
+	log << line;
 
-    if (newLine)
-    {
-        log << std::endl;
-    }
+	if (newLine)
+	{
+		log << std::endl;
+	}
 }
 
 std::string GetExecutableDirectory()
 {
-    char buffer[MAX_PATH];
-    GetModuleFileNameA(NULL, buffer, MAX_PATH);
-    std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+	char buffer[MAX_PATH];
+	GetModuleFileNameA(NULL, buffer, MAX_PATH);
+	std::string::size_type pos = std::string(buffer).find_last_of("\\/");
 
-    return std::string(buffer).substr(0, pos);
+	return std::string(buffer).substr(0, pos);
 }
 
 DWORD WINAPI dllThread(HMODULE hModule)
 {
-    DWORD dwExit = 0;
+	DWORD dwExit = 0;
 
-    std::string exePath = GetExecutableDirectory();
-    std::string logPath = exePath + "\\eml_log.txt";
-    //delete old logfile
-    if (std::filesystem::exists(logPath))
-    {
-        std::filesystem::remove(logPath);
-    }
+	std::string exePath = GetExecutableDirectory();
+	std::string logPath = exePath + "\\eml_log.txt";
+	//delete old logfile
+	if (std::filesystem::exists(logPath))
+	{
+		std::filesystem::remove(logPath);
+	}
 
-    // TODO: search for folder 
-    std::string helperDirPath = "C:\\Users\\aliser\\Saved Games\\Cosmoteer\\76561198068709671\\Mods\\cmod_loader\\bin\\";
+	// TODO: search for folder 
+	std::string helperDirPath = "C:\\Users\\aliser\\Saved Games\\Cosmoteer\\76561198068709671\\Mods\\cmod_loader\\bin\\";
 
-    std::string helperConfigPath = helperDirPath + "CMod_LoaderHelper.runtimeconfig.json";
-    std::wstring t_config = std::wstring(helperConfigPath.begin(), helperConfigPath.end());
-    const char_t* config = t_config.c_str();
+	std::string helperConfigPath = helperDirPath + "CMod_LoaderHelper.runtimeconfig.json";
+	std::wstring t_config = std::wstring(helperConfigPath.begin(), helperConfigPath.end());
+	const char_t* config = t_config.c_str();
 
-    std::string helperDllPath = helperDirPath + "CMod_LoaderHelper.dll";
-    std::wstring t_dll = std::wstring(helperDllPath.begin(), helperDllPath.end());
-    const char_t* dll = t_dll.c_str();
+	std::string helperDllPath = helperDirPath + "CMod_LoaderHelper.dll";
+	std::wstring t_dll = std::wstring(helperDllPath.begin(), helperDllPath.end());
+	const char_t* dll = t_dll.c_str();
 
-    const char_t* helperClassEntrypointName = L"CMod_LoaderHelper.Main, CMod_LoaderHelper";
-    const char_t* helperMethodEntrypointName = L"InitializePatches";
+	const char_t* helperClassEntrypointName = L"CMod_LoaderHelper.Main, CMod_LoaderHelper";
+	const char_t* helperMethodEntrypointName = L"InitializePatches";
 
-    //Give the game time to initialize
-    Sleep(1000);
+	//Give the game time to initialize
+	Sleep(1000);
 
-    if (!std::filesystem::exists(helperDllPath))
-    {
-        LogLine(logPath, "CMod_LoaderHelper.dll not found! Tried loading from: " + helperDllPath);
-        MessageBoxA(NULL, "CMod_LoaderHelper.dll not found!\nCheck eml_config.ini in your Cosmoteer Install directory", "Error", MB_OK | MB_ICONERROR);
+	if (!std::filesystem::exists(helperDllPath))
+	{
+		LogLine(logPath, "CMod_LoaderHelper.dll not found! Tried loading from: " + helperDllPath);
+		MessageBoxA(NULL, "CMod_LoaderHelper.dll not found!\nCheck eml_config.ini in your Cosmoteer Install directory", "Error", MB_OK | MB_ICONERROR);
 		return 0;
-    }
+	}
 
-    if (!std::filesystem::exists(helperConfigPath))
-    {
-        LogLine(logPath, "CMod_LoaderHelper.runtimeconfig.json not found! Tried loading from: " + helperConfigPath);
-        MessageBoxA(NULL, "CMod_LoaderHelper.runtimeconfig.json not found!\nVerify Mod files, this file needs to be in the same Folder as the EML_Helper.dll\nCheck Log", "Error", MB_OK | MB_ICONERROR);
-        return 0;
-    }
+	if (!std::filesystem::exists(helperConfigPath))
+	{
+		LogLine(logPath, "CMod_LoaderHelper.runtimeconfig.json not found! Tried loading from: " + helperConfigPath);
+		MessageBoxA(NULL, "CMod_LoaderHelper.runtimeconfig.json not found!\nVerify Mod files, this file needs to be in the same Folder as the EML_Helper.dll\nCheck Log", "Error", MB_OK | MB_ICONERROR);
+		return 0;
+	}
 
-    //Compare Cosmoteer .NET Version and CMod_LoaderHelper .NET Version
-    std::string cosmoteerConfigPath = exePath + "\\Cosmoteer.runtimeconfig.json";
+	//Compare Cosmoteer .NET Version and CMod_LoaderHelper .NET Version
+	std::string cosmoteerConfigPath = exePath + "\\Cosmoteer.runtimeconfig.json";
 
-    std::ifstream f_c_config(cosmoteerConfigPath);
-    std::ifstream f_m_config(helperConfigPath);
+	std::ifstream f_c_config(cosmoteerConfigPath);
+	std::ifstream f_m_config(helperConfigPath);
 
-    json j_c_config = json::parse(f_c_config)["runtimeOptions"]["tfm"];
-    json j_m_config = json::parse(f_m_config)["runtimeOptions"]["tfm"];
+	json j_c_config = json::parse(f_c_config)["runtimeOptions"]["tfm"];
+	json j_m_config = json::parse(f_m_config)["runtimeOptions"]["tfm"];
 
-    if (j_c_config != j_m_config)
-    {
-        LogLine(logPath, "Version mismatch: Cosmoteer uses " + j_c_config.dump() + " but EML uses " + j_m_config.dump());
-        LogLine(logPath, "Cannot load Mods. Wait for an Update and try again later");
-        MessageBoxA(NULL, ".NET Version mismatch between Cosmoteer and EML!\nMods cannot load, wait for an Update.\nCheck Log in Bin Folder for more Information", "Error", MB_OK | MB_ICONERROR);
-        return dwExit;
-    }
+	if (j_c_config != j_m_config)
+	{
+		LogLine(logPath, "Version mismatch: Cosmoteer uses " + j_c_config.dump() + " but EML uses " + j_m_config.dump());
+		LogLine(logPath, "Cannot load Mods. Wait for an Update and try again later");
+		MessageBoxA(NULL, ".NET Version mismatch between Cosmoteer and EML!\nMods cannot load, wait for an Update.\nCheck Log in Bin Folder for more Information", "Error", MB_OK | MB_ICONERROR);
+		return dwExit;
+	}
 
-    //Loads helper dll
-    LogLine(logPath, "Loading CMod_LoaderHelper.dll: ", false);
-    InitializeResult result = LoadDll(config, dll, helperClassEntrypointName, helperMethodEntrypointName);
-    LogLine(logPath, InitResultToStr(result));
+	//Loads helper dll
+	LogLine(logPath, "Loading CMod_LoaderHelper.dll: ", false);
+	InitializeResult result = LoadDll(config, dll, helperClassEntrypointName, helperMethodEntrypointName);
+	LogLine(logPath, InitResultToStr(result));
 
-    ////Wait for mod list
-    //while (!std::filesystem::exists(lockPath))
-    //{
-    //    Sleep(250);
-    //}
+	////Wait for mod list
+	//while (!std::filesystem::exists(lockPath))
+	//{
+	//    Sleep(250);
+	//}
 
-    //std::string client_only_mods_dir = exePath + PATH_SEPARATOR + "EML_Mods";
+	//std::string client_only_mods_dir = exePath + PATH_SEPARATOR + "EML_Mods";
 
-    //LogLine(logPath, "Looking in client-only mods dir: " + client_only_mods_dir, true);
+	//LogLine(logPath, "Looking in client-only mods dir: " + client_only_mods_dir, true);
 
-    //std::vector<std::string> mods_to_load;
+	//std::vector<std::string> mods_to_load;
 
-    //if (std::filesystem::exists(client_only_mods_dir)) {
-    //    LogLine(logPath, "Found client-only mods dir", true);
-    //    for (auto& p : std::filesystem::recursive_directory_iterator(client_only_mods_dir)) {
-    //        if (p.path().string().find(".dll") != std::string::npos) {
-    //            LogLine(logPath, p.path().string() + "\n-> Found .dll to load", true);
-    //            mods_to_load.push_back(p.path().string());
-    //        }
-    //        
-    //    }
-    //}
-    //else {
-    //    LogLine(logPath, "Client-only mods dir. does not exist. Creating.", true);
-    //    std::filesystem::create_directory(client_only_mods_dir);
-    //}
+	//if (std::filesystem::exists(client_only_mods_dir)) {
+	//    LogLine(logPath, "Found client-only mods dir", true);
+	//    for (auto& p : std::filesystem::recursive_directory_iterator(client_only_mods_dir)) {
+	//        if (p.path().string().find(".dll") != std::string::npos) {
+	//            LogLine(logPath, p.path().string() + "\n-> Found .dll to load", true);
+	//            mods_to_load.push_back(p.path().string());
+	//        }
+	//        
+	//    }
+	//}
+	//else {
+	//    LogLine(logPath, "Client-only mods dir. does not exist. Creating.", true);
+	//    std::filesystem::create_directory(client_only_mods_dir);
+	//}
 
-    //LogLine(logPath, "Loading Mods:");
-    //if (std::filesystem::exists(modsPath) || mods_to_load.size() > 0)
-    //{
-    //    std::ifstream file(modsPath);
-
-
-    //    for (std::string line; getline(file, line);) {
-    //        mods_to_load.push_back(line);
-    //    }
-
-    //    for (auto &line : mods_to_load )
-    //    {
-    //        
-    //        LogLine(logPath, "loading from path: " + line, true);
-
-    //        std::string s_dllPath = line;
+	//LogLine(logPath, "Loading Mods:");
+	//if (std::filesystem::exists(modsPath) || mods_to_load.size() > 0)
+	//{
+	//    std::ifstream file(modsPath);
 
 
-    //        if (std::filesystem::exists(s_dllPath))
-    //        {
-    //            std::wstring t_dllPath = std::wstring(s_dllPath.begin(), s_dllPath.end());
-    //            const char_t* dllPath = t_dllPath.c_str();
+	//    for (std::string line; getline(file, line);) {
+	//        mods_to_load.push_back(line);
+	//    }
 
-    //            //get filename without path and without file extension
-    //            std::string filename = line.substr(line.find_last_of("\\/") + 1);
-    //            filename = filename.substr(0, filename.find_last_of("."));
+	//    for (auto &line : mods_to_load )
+	//    {
+	//        
+	//        LogLine(logPath, "loading from path: " + line, true);
 
-    //            std::string s_typeName = filename + ".Main, " + filename;
-    //            std::wstring t_typeName = std::wstring(s_typeName.begin(), s_typeName.end());
-    //            const char_t* typeName = t_typeName.c_str();
+	//        std::string s_dllPath = line;
 
-    //            LogLine(logPath, "-> " + s_dllPath + ": ", false);
 
-    //            //Read json and compare version
-    //            std::string dllDir = s_dllPath.substr(0, s_dllPath.find_last_of("."));
-    //            std::string configPath = dllDir + ".runtimeconfig.json";
+	//        if (std::filesystem::exists(s_dllPath))
+	//        {
+	//            std::wstring t_dllPath = std::wstring(s_dllPath.begin(), s_dllPath.end());
+	//            const char_t* dllPath = t_dllPath.c_str();
 
-    //            if (std::filesystem::exists(configPath))
-    //            {
+	//            //get filename without path and without file extension
+	//            std::string filename = line.substr(line.find_last_of("\\/") + 1);
+	//            filename = filename.substr(0, filename.find_last_of("."));
+
+	//            std::string s_typeName = filename + ".Main, " + filename;
+	//            std::wstring t_typeName = std::wstring(s_typeName.begin(), s_typeName.end());
+	//            const char_t* typeName = t_typeName.c_str();
+
+	//            LogLine(logPath, "-> " + s_dllPath + ": ", false);
+
+	//            //Read json and compare version
+	//            std::string dllDir = s_dllPath.substr(0, s_dllPath.find_last_of("."));
+	//            std::string configPath = dllDir + ".runtimeconfig.json";
+
+	//            if (std::filesystem::exists(configPath))
+	//            {
 				//	std::ifstream f_dll_config(configPath);
 				//	json j_dll_config = json::parse(f_dll_config)["runtimeOptions"]["tfm"];
 
-    //                if (j_c_config != j_dll_config)
-    //                {
-    //                    LogLine(logPath, "Error (Outdated: This mod uses " + j_dll_config.dump() + " but Cosmoteer uses " + j_c_config.dump() + ")");
-    //                }
-    //                else
-    //                {
-    //                    std::wstring tmpMod_config = std::wstring(configPath.begin(), configPath.end());
-    //                    const char_t* c_tmpMod_config = tmpMod_config.c_str();
+	//                if (j_c_config != j_dll_config)
+	//                {
+	//                    LogLine(logPath, "Error (Outdated: This mod uses " + j_dll_config.dump() + " but Cosmoteer uses " + j_c_config.dump() + ")");
+	//                }
+	//                else
+	//                {
+	//                    std::wstring tmpMod_config = std::wstring(configPath.begin(), configPath.end());
+	//                    const char_t* c_tmpMod_config = tmpMod_config.c_str();
 
-    //                    //Load Mod
-    //                    InitializeResult modResult = LoadDll(c_tmpMod_config, dllPath, typeName, helperMethodEntrypointName);
-    //                    LogLine(logPath, InitResultToStr(modResult));
-    //                }
-    //            }
-    //            else
-    //            {
-    //                LogLine(logPath, "No .runtimeconfig.json -> fallback to eml default config: ", false);
-    //                //Load Mod
-    //                InitializeResult modResult = LoadDll(config, dllPath, typeName, helperMethodEntrypointName);
-    //                LogLine(logPath, InitResultToStr(modResult));
-    //            }
-    //        } else LogLine(logPath, "Mod not found: " + s_dllPath);
-    //    }
-    //} else LogLine(logPath, "No mods to load found");
+	//                    //Load Mod
+	//                    InitializeResult modResult = LoadDll(c_tmpMod_config, dllPath, typeName, helperMethodEntrypointName);
+	//                    LogLine(logPath, InitResultToStr(modResult));
+	//                }
+	//            }
+	//            else
+	//            {
+	//                LogLine(logPath, "No .runtimeconfig.json -> fallback to eml default config: ", false);
+	//                //Load Mod
+	//                InitializeResult modResult = LoadDll(config, dllPath, typeName, helperMethodEntrypointName);
+	//                LogLine(logPath, InitResultToStr(modResult));
+	//            }
+	//        } else LogLine(logPath, "Mod not found: " + s_dllPath);
+	//    }
+	//} else LogLine(logPath, "No mods to load found");
 
-    LogLine(logPath, "All Done.");
+	LogLine(logPath, "All Done.");
 
-    FreeLibraryAndExitThread(hModule, 0);
-    return dwExit;
+	FreeLibraryAndExitThread(hModule, 0);
+	return dwExit;
 }
 
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-                     )
+BOOL APIENTRY DllMain(HMODULE hModule,
+	DWORD  ul_reason_for_call,
+	LPVOID lpReserved
+)
 {
-    switch (ul_reason_for_call)
-    {
-    case DLL_PROCESS_ATTACH:
-        CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)dllThread, hModule, 0, nullptr);
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
-    case DLL_PROCESS_DETACH:
-        break;
-    }
-    return TRUE;
+	switch (ul_reason_for_call)
+	{
+	case DLL_PROCESS_ATTACH:
+		CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)dllThread, hModule, 0, nullptr);
+	case DLL_THREAD_ATTACH:
+	case DLL_THREAD_DETACH:
+	case DLL_PROCESS_DETACH:
+		break;
+	}
+	return TRUE;
 }
