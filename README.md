@@ -1,7 +1,7 @@
 # Cosmoteer C# Mod Loader (aka CMod Loader)
 ### A utility for loading C# mods into Cosmoteer
 
-*Heavily based on [EnhancedModLoader](https://github.com/C0dingschmuser/EnhancedModLoader) by C0dingschmuser & eamondo2*
+*Heavily based on [EnhancedModLoader](https://github.com/C0dingschmuser/EnhancedModLoader) by [C0dingschmuser](https://github.com/C0dingschmuser) & [eamondo2](https://github.com/eamondo2)*
 
 
 

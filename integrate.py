@@ -10,13 +10,15 @@ import subprocess
 from subprocess import Popen, PIPE
 import re
 
+exit(0)
 
-# whether to start the cosmoteer process after the build
-start_cosmoteer_after_build = True
-
-# whether to start the cosmoteer process in dev mode after the build
-# doesn't do anything, if "start_cosmoteer_after_build" is false
-start_cosmoteer_in_dev_mode = True
+# ===============
+# This script copies the build result into the cmod loader mod dir,
+# then runs the intsall script located there.
+#
+# See the params below -�you WILL need to change atleast some of them,
+# if you are planning on building.
+# ===============
 
 # absolute path to cosmoteer "bin" directory. escaping separators is not needed.
 cosmoteer_bin_dir_path = r"C:\Program Files (x86)\Steam\steamapps\common\Cosmoteer\Bin"
@@ -26,7 +28,14 @@ cmod_loader_mod_dir_path = (
     r"C:\Users\aliser\Saved Games\Cosmoteer\76561198068709671\Mods\cmod_loader"
 )
 
-# timeout in ms before restarting the cosmoteer process
+# whether to start the cosmoteer process after the build
+start_cosmoteer_after_build = True
+
+# whether to start the cosmoteer process in dev mode after the build
+# doesn't do anything, if "start_cosmoteer_after_build" is false
+start_cosmoteer_in_dev_mode = True
+
+# timeout in ms before restarting the cosmoteer process.
 # since Steam takes some time before the process can be restarted, this is required
 cosmoteer_process_restart_timeout_seconds = 3
 
