@@ -10,6 +10,8 @@ import subprocess
 from subprocess import Popen, PIPE
 import re
 
+exit(0)
+
 # ===============
 # This script copies the build result into the cmod loader mod dir,
 # then runs the intsall script located there.
@@ -20,6 +22,11 @@ import re
 
 # absolute path to cosmoteer "bin" directory. escaping separators is not needed.
 cosmoteer_bin_dir_path = r"C:\Program Files (x86)\Steam\steamapps\common\Cosmoteer\Bin"
+
+# absolute path to cmod loader mod directory. escaping separators is not needed.
+cmod_loader_mod_dir_path = (
+    r"C:\Users\aliser\Saved Games\Cosmoteer\76561198068709671\Mods\cmod_loader"
+)
 
 # whether to start the cosmoteer process after the build
 start_cosmoteer_after_build = True
@@ -57,10 +64,10 @@ configuration = sys.argv[3]
 build_dir_path = path.join(solution_dir, platform, configuration)
 # path to the cmod loader helper build output dir
 helper_build_dir_path = path.join(
-    solution_dir, "CMod_Helper", "bin", configuration, "net9.0-windows7.0"
+    solution_dir, "CMod_LoaderHelper", "bin", configuration, "net7.0-windows"
 )
 # path to the cmod loader install script (which installs the cmod loader dll into Cosmoteer)
-mod_installer_script_file_path = path.join(cosmoteer_bin_dir_path, "install.bat")
+mod_installer_script_file_path = path.join(cmod_loader_mod_dir_path, "install.bat")
 
 log("params:")
 
@@ -68,7 +75,7 @@ log("                            solution dir: ", solution_dir)
 log("                                platform: ", platform)
 log("                           configuration: ", configuration)
 log("                  cosmoteer bin dir path: ", cosmoteer_bin_dir_path)
-log("                cmod loader mod dir path: ", cosmoteer_bin_dir_path)
+log("                cmod loader mod dir path: ", cmod_loader_mod_dir_path)
 log("              cmod loader build dir path: ", build_dir_path)
 log("       cmod loader helper build dir path: ", helper_build_dir_path)
 log("  cmod loader installer script file path: ", mod_installer_script_file_path)
@@ -105,28 +112,28 @@ copy_preset: list[Tuple[str, str]] = [
     (
         path.join(build_dir_path, "CMod_Loader.dll"),
         path.join(
-            cosmoteer_bin_dir_path, "AVRT.dll"
+            cmod_loader_mod_dir_path, "bin", "AVRT.dll"
         ),  #                                 ^^^^^^^^ the name of the dll that would be replaced with the loader
     ),
     (
         path.join(build_dir_path, "CMod_Loader.pdb"),
         path.join(
-            cosmoteer_bin_dir_path, "AVRT.pdb"
+            cmod_loader_mod_dir_path, "bin", "AVRT.pdb"
         ),  #                                 ^^^^^^^^ the name of the dll that would be replaced with the loader
     ),
     #
     (
-        path.join(helper_build_dir_path, "CMod_Helper.dll"),
-        path.join(cosmoteer_bin_dir_path, "CMod_Helper.dll"),
+        path.join(helper_build_dir_path, "CMod_LoaderHelper.dll"),
+        path.join(cmod_loader_mod_dir_path, "bin", "CMod_LoaderHelper.dll"),
     ),
     (
-        path.join(helper_build_dir_path, "CMod_Helper.pdb"),
-        path.join(cosmoteer_bin_dir_path, "CMod_Helper.pdb"),
+        path.join(helper_build_dir_path, "CMod_LoaderHelper.pdb"),
+        path.join(cmod_loader_mod_dir_path, "bin", "CMod_LoaderHelper.pdb"),
     ),
     (
-        path.join(helper_build_dir_path, "CMod_Helper.runtimeconfig.json"),
+        path.join(helper_build_dir_path, "CMod_LoaderHelper.runtimeconfig.json"),
         path.join(
-            cosmoteer_bin_dir_path, "CMod_Helper.runtimeconfig.json"
+            cmod_loader_mod_dir_path, "bin", "CMod_LoaderHelper.runtimeconfig.json"
         ),
     ),
 ]
@@ -153,59 +160,59 @@ for i, (fromPath, toPath) in enumerate(copy_preset):
     shutil.copyfile(fromPath, toPath)
 
 
-# log("===============")
-#
-# log("installing cmod loader onto Cosmoteer")
-# if not path.exists(mod_installer_script_file_path):
-#     raise Exception(
-#         "cmod loader installer script not found: " + mod_installer_script_file_path
-#     )
-#
-# # run the installer script with input being redirected from DEVNULL, skipping any pauses
-# loader_install_script_process = Popen(
-#     [
-#         mod_installer_script_file_path,
-#         "1",  # debug flag
-#         cosmoteer_bin_dir_path,  # cosmoteer bin dir
-#     ],
-#     stdout=PIPE,
-# )
-#
-# # get the stdout
-# loader_install_script_stdout = loader_install_script_process.stdout
-# if loader_install_script_stdout == None:
-#     raise Exception("Got None instead of stdout")
-#
-# # read the output
-# loader_install_script_output = loader_install_script_stdout.read().decode(
-#     "ascii", errors="ignore"
-# )
-#
-# # file = open("result.txt", "w")
-# # file.write(loader_install_script_output)
-# # file.close()
-#
-# # print the output
-# for line in re.split(r"\r\n", loader_install_script_output, flags=re.MULTILINE):
-#     if line == " ":
-#         # skip empty lines
-#         continue
-#
-#     log(f"[{path.basename(mod_installer_script_file_path)}] {line}")
-#
-#
-# # get the exit code
-# # loader_install_script_process.communicate()
-# # process_exit_code = loader_install_script_process.poll()
-# process_exit_code = loader_install_script_process.wait()
-#
-# # stop execution if install failed
-# if process_exit_code != 0:
-#     # error
-#     raise Exception("Error while installing the cmod loader (see the output above)")
-#
-# # close the install script process
-# loader_install_script_stdout.close()
+log("===============")
+
+log("installing cmod loader onto Cosmoteer")
+if not path.exists(mod_installer_script_file_path):
+    raise Exception(
+        "cmod loader installer script not found: " + mod_installer_script_file_path
+    )
+
+# run the installer script with input being redirected from DEVNULL, skipping any pauses
+loader_install_script_process = Popen(
+    [
+        mod_installer_script_file_path,
+        "1",  # debug flag
+        cosmoteer_bin_dir_path,  # cosmoteer bin dir
+    ],
+    stdout=PIPE,
+)
+
+# get the stdout
+loader_install_script_stdout = loader_install_script_process.stdout
+if loader_install_script_stdout == None:
+    raise Exception("Got None instead of stdout")
+
+# read the output
+loader_install_script_output = loader_install_script_stdout.read().decode(
+    "ascii", errors="ignore"
+)
+
+# file = open("result.txt", "w")
+# file.write(loader_install_script_output)
+# file.close()
+
+# print the output
+for line in re.split(r"\r\n", loader_install_script_output, flags=re.MULTILINE):
+    if line == " ":
+        # skip empty lines
+        continue
+
+    log(f"[{path.basename(mod_installer_script_file_path)}] {line}")
+
+
+# get the exit code
+# loader_install_script_process.communicate()
+# process_exit_code = loader_install_script_process.poll()
+process_exit_code = loader_install_script_process.wait()
+
+# stop execution if install failed
+if process_exit_code != 0:
+    # error
+    raise Exception("Error while installing the cmod loader (see the output above)")
+
+# close the install script process
+loader_install_script_stdout.close()
 
 
 log("===============")

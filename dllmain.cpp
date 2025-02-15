@@ -195,7 +195,7 @@ DWORD WINAPI dllThread(HMODULE hModule)
 	DWORD dwExit = 0;
 
 	std::string exePath = GetExecutableDirectory();
-	std::string logPath = exePath + "\\eml_log.txt";
+	std::string logPath = exePath + "\\CMod_Loader.log";
 	//delete old logfile
 	if (std::filesystem::exists(logPath))
 	{
@@ -203,37 +203,47 @@ DWORD WINAPI dllThread(HMODULE hModule)
 	}
 
 	// TODO: search for folder 
-	std::string helperDirPath = "C:\\Users\\aliser\\Saved Games\\Cosmoteer\\76561198068709671\\Mods\\cmod_loader\\bin\\";
+	std::string helperDirPath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Cosmoteer\\Bin";
+	std::string helperDllName = "CMod_Helper.dll";
+	std::string helperConfigName = "CMod_Helper.runtimeconfig.json";
+	// first is the path to the class, second is the dll filename (without ext)
+	const char_t* helperClassEntrypointName = L"CMod_Helper.Main, CMod_Helper";
+	const char_t* helperMethodEntrypointName = L"InitializePatches";
 
-	std::string helperConfigPath = helperDirPath + "CMod_LoaderHelper.runtimeconfig.json";
+
+	std::string helperConfigPath = helperDirPath + "\\" + helperConfigName;
 	std::wstring t_config = std::wstring(helperConfigPath.begin(), helperConfigPath.end());
 	const char_t* config = t_config.c_str();
 
-	std::string helperDllPath = helperDirPath + "CMod_LoaderHelper.dll";
+	std::string helperDllPath = helperDirPath + "\\" + helperDllName;
 	std::wstring t_dll = std::wstring(helperDllPath.begin(), helperDllPath.end());
 	const char_t* dll = t_dll.c_str();
 
-	const char_t* helperClassEntrypointName = L"CMod_LoaderHelper.Main, CMod_LoaderHelper";
-	const char_t* helperMethodEntrypointName = L"InitializePatches";
+	LogLine(logPath, "Helper path: " + helperDllPath);
+	LogLine(logPath, "Helper config path: " + helperConfigPath);
 
 	//Give the game time to initialize
 	Sleep(1000);
 
 	if (!std::filesystem::exists(helperDllPath))
 	{
-		LogLine(logPath, "CMod_LoaderHelper.dll not found! Tried loading from: " + helperDllPath);
-		MessageBoxA(NULL, "CMod_LoaderHelper.dll not found!\nCheck eml_config.ini in your Cosmoteer Install directory", "Error", MB_OK | MB_ICONERROR);
-		return 0;
+		LogLine(logPath, helperDllName + " not found! Tried loading from: " + helperDllPath);
+
+		std::string msg = helperDllName + " not found!\nCheck eml_config.ini in your Cosmoteer Install directory";
+		MessageBoxA(NULL, msg.c_str(), "Error", MB_OK | MB_ICONERROR);
+		return dwExit;
 	}
 
 	if (!std::filesystem::exists(helperConfigPath))
 	{
-		LogLine(logPath, "CMod_LoaderHelper.runtimeconfig.json not found! Tried loading from: " + helperConfigPath);
-		MessageBoxA(NULL, "CMod_LoaderHelper.runtimeconfig.json not found!\nVerify Mod files, this file needs to be in the same Folder as the EML_Helper.dll\nCheck Log", "Error", MB_OK | MB_ICONERROR);
-		return 0;
+		LogLine(logPath, helperConfigName + " not found! Tried loading from: " + helperConfigPath);
+
+		std::string msg = helperConfigName + " not found!\nVerify Mod files, this file needs to be in the same Folder as the EML_Helper.dll\nCheck Log";
+		MessageBoxA(NULL, msg.c_str(), "Error", MB_OK | MB_ICONERROR);
+		return dwExit;
 	}
 
-	//Compare Cosmoteer .NET Version and CMod_LoaderHelper .NET Version
+	//Compare Cosmoteer .NET Version and CMod_Helper .NET Version
 	std::string cosmoteerConfigPath = exePath + "\\Cosmoteer.runtimeconfig.json";
 
 	std::ifstream f_c_config(cosmoteerConfigPath);
@@ -251,9 +261,17 @@ DWORD WINAPI dllThread(HMODULE hModule)
 	}
 
 	//Loads helper dll
-	LogLine(logPath, "Loading CMod_LoaderHelper.dll: ", false);
+	LogLine(logPath, "Loading " + helperDllName + ": ", false);
 	InitializeResult result = LoadDll(config, dll, helperClassEntrypointName, helperMethodEntrypointName);
-	LogLine(logPath, InitResultToStr(result));
+	std::string resultStr = InitResultToStr(result);
+
+	LogLine(logPath, resultStr);
+	if (resultStr != "Success") {
+		std::string msg = helperDllName + " failed to load: " + resultStr;
+		MessageBoxA(NULL, msg.c_str(), "Error", MB_OK | MB_ICONERROR);
+		return dwExit;
+	}
+
 
 	////Wait for mod list
 	//while (!std::filesystem::exists(lockPath))
@@ -349,7 +367,7 @@ DWORD WINAPI dllThread(HMODULE hModule)
 	//    }
 	//} else LogLine(logPath, "No mods to load found");
 
-	LogLine(logPath, "All Done.");
+	//LogLine(logPath, "All Done.");
 
 	FreeLibraryAndExitThread(hModule, 0);
 	return dwExit;
