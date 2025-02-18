@@ -1,6 +1,8 @@
-﻿using System.Reflection;
+﻿using Cosmoteer;
+using Cosmoteer.Mods;
+using Halfling.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 [assembly: IgnoresAccessChecksTo("Cosmoteer")]
 
@@ -19,55 +21,104 @@ namespace System.Runtime.CompilerServices {
 // for the dll injector to use
 
 namespace CMod_Helper {
+    enum HelperLocation {
+        LocalMods,
+        WorkshopMods
+    }
+
     public class Main {
-        private static string cmodLoaderHelperDllName = "CMod_LoaderHelper.dll";
-        private static string cmodModsDir = "CMods";
-        private static string modDllName = "Main.dll";
+        private static string cModDllPathFromWithinCModDirectory = Path.Combine("CMod", "Main.dll");
+        private static string cModLoaderModDirname = "CMod_Loader";
+        private static string cModLoaderDllRealFilename = "CMod_Loader";
+        private static string cModLoaderDllFakeFilename = "AVRT.dll"
 
         [UnmanagedCallersOnly]
         public static void InitializePatches() {
-            FileLog.Log("initializing...");
+            FileLog.Log("Initializing patches");
 
-            string pathToCurrentDir = Utils.GetPathToCurrentDll();
-
-            string cmodModsDirPath = Path.Combine(pathToCurrentDir, cmodModsDir);
-
-            if(!Directory.Exists(cmodModsDirPath)) {
-                FileLog.Log("CMods directory not found");
+            if(GameApp.IsNoModsMode) {
+                FileLog.Log("Game is launched with mods disabled. No CMods will be loaded.");
                 return;
             }
 
-            string[] modsDirPaths = Directory.GetDirectories(cmodModsDirPath);
-            if(modsDirPaths.Length == 0) {
-                FileLog.Log("No mods found in CMods directory");
-            } else {
-                FileLog.Log($"Found {modsDirPaths.Length} mods");
-            }
+            string cwd = Utils.GetPathToCurrentDllDirectory();
 
-            for(int i = 0; i < modsDirPaths.Length; i++) {
-                string modDirPath = modsDirPaths[i];
-                string modDllPath = Path.Join(modDirPath, modDllName);
+            //HelperLocation helperLocation = cwd.Contains("Saved Games") ? HelperLocation.LocalMods : HelperLocation.WorkshopMods;
 
-                // GetFileName will actually return the dir name.
-                // it just returns the last part of a path.
-                FileLog.Log($"[{i + 1} of {modsDirPaths.Length}] Loading mod: {Path.GetFileName(modDirPath)}");
-                FileLog.Log(modDllPath);
+            FileLog.Separator();
+            FileLog.Log("Processing Mods:");
 
-                if(!File.Exists(modDllPath)) {
-                    FileLog.Log($"Main mod DLL {modDllName} not found within the mod folder");
-                    return;
+            List<(AbsolutePath absolutePath, string modInstallSourceStr, string modDirname)> cModsToLoad = new();
+            foreach((AbsolutePath absolutePath, ModInstallSource modInstallSource, string workshopId) in ModInfo.GetAllModFolders()) {
+                string modInstallSourceStr;
+                switch(modInstallSource) {
+                    case ModInstallSource.BuiltIn:
+                        modInstallSourceStr = "Built-In";
+                        break;
+                    case ModInstallSource.User:
+                        modInstallSourceStr = "Local";
+                        break;
+                    case ModInstallSource.Workshop:
+                        modInstallSourceStr = "Workshop";
+                        break;
+                    default:
+                        modInstallSourceStr = "UNKNOWN";
+                        break;
                 }
 
-                //string[] files = Directory.GetFiles(modDirPath);
-                //if(!files.Contains(modDllName)) {
-                //}
+                string modDirname = GetPathLastBit(absolutePath);
 
-                LoadModDll(modDllPath);
+                if(!IsCModModDirectory(absolutePath)) {
+                    FileLog.Log($"\t{modDirname} - Non-CMod [{modInstallSourceStr}]");
+                    continue;
+                }
 
-                FileLog.Log("Mod loaded!");
+                if(!Settings.EnabledMods.Contains(absolutePath)) {
+                    FileLog.Log($"\t{modDirname} - CMod, Disabled [{modInstallSourceStr}]");
+                    continue;
+                }
+
+                FileLog.Log($"\t{modDirname} - CMod, TO BE LOADED [{modInstallSourceStr}]");
+                cModsToLoad.Add((absolutePath, modInstallSourceStr, modDirname));
             }
 
-            FileLog.Log("Loading for all mods is complete!");
+            FileLog.Separator();
+
+            FileLog.Log("Loading Mods:");
+
+            foreach((AbsolutePath absolutePath, string modInstallSourceStr, string modDirname) in cModsToLoad) {
+                FileLog.Log($"\t{modDirname} - Loading [{modInstallSourceStr}]");
+
+                string dllPath = Path.Combine(absolutePath, cModDllPathFromWithinCModDirectory);
+                LoadModDll(dllPath);
+            }
+
+            FileLog.Separator();
+
+            FileLog.Log("Loading complete. Enjoy!");
+        }
+
+        /// <summary>
+        /// Check 
+        /// </summary>
+        static void CheckForCModLoaderVersionMismatch() {
+
+        }
+
+        /// Checks whether given directory is a valid CMod directory.
+        /// </summary>
+        /// <returns></returns>
+        static bool IsCModModDirectory(AbsolutePath path) {
+            return File.Exists(Path.Combine(path, cModDllPathFromWithinCModDirectory));
+        }
+
+        /// <summary>
+        /// Returns the last segment of a path.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        static string GetPathLastBit(AbsolutePath path) {
+            return path.ToString().Split(Path.DirectorySeparatorChar).Last();
         }
 
         public static void LoadModDll(string dllAbsPath) {
@@ -75,7 +126,7 @@ namespace CMod_Helper {
 
             Assembly assembly = Assembly.LoadFrom(dllAbsPath);
 
-            Type? classType = assembly.GetType("CMod_Example.Main");
+            Type? classType = assembly.GetType("CMod.Main");
             if(classType == null) throw new Exception("No main class type.");
             MethodInfo? methodInfo = classType.GetMethod("InitializePatches", BindingFlags.Static | BindingFlags.Public);
             if(methodInfo == null) throw new Exception("No methodinfo.");

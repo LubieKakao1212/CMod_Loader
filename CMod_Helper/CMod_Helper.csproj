@@ -18,7 +18,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="python" Version="3.12.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,22 +28,19 @@
   <ItemGroup>
     <Reference Include="Cosmoteer">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Cosmoteer\Bin\Cosmoteer.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="HalflingCore">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Cosmoteer\Bin\HalflingCore.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
 
 	<ItemGroup>
 		<Compile Remove="C:\Users\aliser\.nuget\packages\krafs.publicizer\2.2.1\contentfiles\cs\any\Publicizer\IgnoresAccessChecksToAttribute.cs"></Compile>
 	</ItemGroup>
-	
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <!--<Exec Command="call &quot;C:/Users/aliser/Desktop/EML_Build.bat&quot;" />-->
-  </Target>
-  
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <!--<Exec Command="call &quot;$(SolutionDir)integrate.bat&quot;" />-->
-  </Target>
 
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="powershell -File IntegrateAfterBuild.ps1 $(OutDir)" />
+	</Target>
 </Project>

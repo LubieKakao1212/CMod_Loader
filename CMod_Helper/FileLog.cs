@@ -12,10 +12,21 @@
             File.AppendAllText(logfilePath, $"[{datetimePrefix}] {message}\n");
         }
 
+        /// <summary>
+        /// Logs a separator for visual clarity.
+        /// </summary>
+        public static void Separator() {
+            if(!initialized) {
+                Initialize();
+            }
+
+            Log("======================");
+        }
+
         private static void Initialize() {
             logfilePath = Path.Combine(
-                Utils.GetPathToCurrentDll(),
-                "CMod_Helper.log"
+                Utils.GetPathToCurrentDllDirectory(),
+                "Logfile.log"
             );
 
             if(File.Exists(logfilePath)) {
