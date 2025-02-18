@@ -17,7 +17,7 @@ $cmod_loader_mod_folder_name = "CMod_Loader"
 $install_script_filename = "Install.ps1"
 
 # whether to restart (or start) Cosmoteer after the script is done
-$restart_cosmoteer = $true
+$restart_cosmoteer = $false
 
 # whether to start Cosmoteer in devmode. 
 # works only if $restart_cosmoteer is enabled.

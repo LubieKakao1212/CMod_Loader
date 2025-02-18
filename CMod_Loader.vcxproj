@@ -45,10 +45,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>CMod_Loader</TargetName>
+    <TargetName>AVRT</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>CMod_Loader</TargetName>
+    <TargetName>AVRT</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -104,6 +104,7 @@
     <None Include="Static\Install.ps1" />
     <None Include="IntegrateAfterBuild.ps1" />
     <None Include="README.md" />
+    <None Include="Static\Uninstall.ps1" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

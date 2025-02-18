@@ -1,6 +1,6 @@
-# Installs or reinstalls the CMod Loader.
+# Uninstall the CMod Loader.
 
-echo "=== CMod Loader Install ==="
+echo "=== CMod Loader Uninstall ==="
 
 # source: https://stackoverflow.com/a/22362868
 Function Pause ($Message = "Press any key to continue . . . ") {
@@ -15,8 +15,18 @@ Function Pause ($Message = "Press any key to continue . . . ") {
     }
 }
 
+Function Delete-Paths-If-Exists-Verbose ($Paths) {
+    foreach ($filePath in $Paths) {
+        if (Test-Path $filePath) {
+            Remove-Item $filePath -Verbose
+        }
+        else {
+            Write-Host -ForegroundColor Yellow "Path does not exist: $filePath"
+        }
+    }
+}
 
-$failed_try_manual_msg = "=== CMod Loader installation failed === `nPlease, try to install it manually by copying 'AVRT.dll' to the Cosmoteer Bin folder."
+$failed_try_manual_msg = "=== CMod Loader uninstall failed === `nPlease, uninstall the Loader manually: `n1. Open Cosmoteer Bin folder. `n2. Remove 'AVRT.dll' file."
 
 $steam_reg_path = 'HKCU:\Software\Valve\Steam'
 try {
@@ -44,8 +54,9 @@ if (!(test-path -PathType container $cosmoteer_bin_dir_path)) {
 echo "Found Cosmoteer Bin at: $cosmoteer_bin_dir_path"
 
 
-echo "Installing Loader..."
-Copy-Item -Path ".\AVRT.dll" -Destination "$cosmoteer_bin_dir_path\" -Verbose -force
+# remove loader and logfile
+echo "Uninstalling Loader..."
+Delete-Paths-If-Exists-Verbose ("$cosmoteer_bin_dir_path\AVRT.dll", "$cosmoteer_bin_dir_path\CMod_Loader.log")
 
 
 echo "All Done!"

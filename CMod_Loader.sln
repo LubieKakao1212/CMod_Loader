@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CMod_Loader", "CMod_Loader.vcxproj", "{FCAAB383-8ED4-44EE-ADB6-15B946344B57}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMod_Helper", "CMod_Helper\CMod_Helper.csproj", "{12BD5A5A-C967-EA52-9AAF-819B9C03F1D1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FCAAB383-8ED4-44EE-ADB6-15B946344B57} = {FCAAB383-8ED4-44EE-ADB6-15B946344B57}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
