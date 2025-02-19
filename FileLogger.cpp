@@ -58,6 +58,9 @@ void Log(LogLevel level, std::string msg, bool lineBreak) {
 	} else {
 		logStream << msg;
 	}
+
+	// write on each log message
+	logStream.flush();
 }
 
 // Debug log level.

@@ -43,4 +43,5 @@ void LogErrrrrrrr(std::string msg, bool lineBreak = true);
 // Fatal log level.
 void LogSilksongCameOut(std::string msg, bool lineBreak = true);
 
-static void InitializeIfNeeded();
+// Finish printing
+void Close();

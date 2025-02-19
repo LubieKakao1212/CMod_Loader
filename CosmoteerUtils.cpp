@@ -38,7 +38,7 @@ std::optional<fs::path> CosmoteerUtils::FindCModLoaderModDirectoryInDirectory(fs
 	std::optional<fs::path> pathToCModLoadDll = FindFilenameInImmediateSubdirectories(dirPath, CMOD_LOADER_DLL_FILENAME);
 	if (pathToCModLoadDll.has_value()) {
 		// not actual filename, but a name of a directory
-		return pathToCModLoadDll.value().parent_path().filename();
+		return pathToCModLoadDll.value().parent_path();
 	}
 
 	return {};

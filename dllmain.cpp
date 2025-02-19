@@ -10,6 +10,9 @@
 #include "CosmoteerUtils.h"
 #include "FileLogger.h"
 #include "Variables.h"
+#include <chrono>
+#include <format>
+#include <iostream>
 namespace fs = std::filesystem;
 
 #pragma comment(linker,"/export:AvCreateTaskIndex=C:\\Windows\\System32\\avrt.AvCreateTaskIndex,@1")
@@ -210,16 +213,41 @@ void ShowErrorMessageBox(std::string message) {
 /// Show an notice message to the user if a new version is found.
 /// </summary>
 void CheckForLoaderUpdates() {
-	LogYap("Checking for Loader updates by looking through installed mods.");
+	// get current Loader dll modified time
+	fs::path currentCModLoaderDllPath = Utils::GetExecutableDirectory();
+	currentCModLoaderDllPath /= CMOD_LOADER_DLL_FILENAME;
 
-	std::optional<fs::path> cModLoaderModDir = CosmoteerUtils::FindCModLoaderModDirectory();
-	if (!cModLoaderModDir.has_value()) {
+	LogYap("Current CMod Loader path (obviously): " + currentCModLoaderDllPath.string());
+
+	auto currentCModLoaderDllModified = fs::last_write_time(currentCModLoaderDllPath);
+
+	LogYap(std::format("Last modified: {}", currentCModLoaderDllModified));
+
+	// find Loader dll in a mod folder and get its modified time
+	std::optional<fs::path> cModLoaderModDirResult = CosmoteerUtils::FindCModLoaderModDirectory();
+	if (!cModLoaderModDirResult.has_value()) {
 		std::string msg = "Failed to find the Loader mod folder when checking for updates.";
-		LogErrrrrrrr(msg);
-		ShowErrorMessageBox(msg);
+		LogUhOh(msg);
+		ShowWarningMessageBox(msg);
+		return;
 	}
+	fs::path cModLoaderModDirDllPath = cModLoaderModDirResult.value();
+	cModLoaderModDirDllPath /= CMOD_LOADER_DLL_FILENAME;
 
-	// todo
+	LogYap("Found CMod Loader in mod dir, path: " + cModLoaderModDirDllPath.string());
+
+	auto cModLoaderModDirDllModified = fs::last_write_time(cModLoaderModDirDllPath);
+
+	LogYap(std::format("Last modified: {}", cModLoaderModDirDllModified));
+
+	// compare
+	if (cModLoaderModDirDllModified > currentCModLoaderDllModified) {
+		std::string msg = "A newer version of CMod Loader is available for installation. Run the Install script again if you wish to update. Loader Mod directory: " + cModLoaderModDirResult.value().string();
+		ShowInfoMessageBox(msg);
+		LogYap(msg);
+	} else {
+		LogYap("No updates - last modified time is the same.");
+	}
 }
 
 // ====================================
@@ -301,11 +329,11 @@ DWORD WINAPI dllThread(HMODULE hModule)
 	}
 
 	// load Helper dll
-	LogYap("Sleeping before loading Helper DLL to not anger the space gods");
+	LogYap("Sleeping for " + std::to_string(SLEEP_BEFORE_HELPER_LOAD_MS) + "ms before loading Helper DLL to not anger the space gods.");
 
 	// Give the game time to initialize
 	// Needed for the Loader to be able to access Cosmoteer variables and such.
-	Sleep(1000);
+	Sleep(SLEEP_BEFORE_HELPER_LOAD_MS);
 
 	LogYap("Wakey-wakey! Let the Helper DLL loading commence.");
 
@@ -322,6 +350,9 @@ DWORD WINAPI dllThread(HMODULE hModule)
 	}
 
 	LogYap("CMod Helper has been successfully loaded. Have Fun!");
+
+	LogYap("...one more thing. Checking for Loader updates (looking through installed mods).");
+	CheckForLoaderUpdates();
 
 	FreeLibraryAndExitThread(hModule, 0);
 	return dwExit;
