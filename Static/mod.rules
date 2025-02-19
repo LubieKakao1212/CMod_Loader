@@ -1,0 +1,32 @@
+// Every mod must have an ID that is used to uniquely identify the mod and differentiate it from other mods.
+// In order to avoid ID conflicts with other mods, you *must* follow the "author_name.mod_name" format.
+// Do *not* use "cosmoteer" as your author name -- that is reserved for official mods only!
+ID = aliser.cmod_loader
+
+// You must give a human-readable name for your mod. This is what will be shown in the user interface.
+Name = "[CMod][Core] Loader"
+
+// The version of the mod that will be shown in the user interface. This is optional.
+Version = 0.0.1
+
+// This is a list of Cosmoteer versions that this mod is known to be compatible with.
+// If this mod is turned on and it isn't known to be compatible with the version of Cosmoteer
+// that the player is running, a warning will be displayed. When upgrading the game, mods
+// that aren't known to be compatible with the new version will also be automatically disabled.
+CompatibleGameVersions = ["0.28.1b"]
+
+// This should be set to true for any mod that makes gameplay changes.
+// Setting this to false *MAY* make it possible to play multiplayer with someone else who doesn't have this mod,
+// so long as this mod doesn't actually make any gameplay changes. (Setting this to false will *NOT*
+// magically allow you to play with someone who doesn't have this mod; it will just make the error
+// less informative.) If omitted, the default is true.
+ModifiesGameplay = true
+
+// The name of the mod creator(s) that will be shown in the user interface. This is optional.
+Author = "Aliser"
+
+// A logo to display for your mod in the user interface. This is optional.
+Logo = "logo.png"
+
+// A longer description of what your mod does to the game. This is optional.
+Description = "CMod Loader. Loads CMods - C# Mods. Requires the CMod Helper mod to function. \n\nNOTE: enabling or disabling this mod won't do anything. To install it, run the Install.ps1 script inside the mod folder. To uninstall, run the Uninstall.ps1 script in the same folder."

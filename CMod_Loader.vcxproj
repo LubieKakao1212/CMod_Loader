@@ -109,10 +109,15 @@
     <ClInclude Include="Variables.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Static\.workshop" />
     <None Include="Static\Install.ps1" />
     <None Include="IntegrateAfterBuild.ps1" />
     <None Include="README.md" />
+    <None Include="Static\mod.rules" />
     <None Include="Static\Uninstall.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Static\logo.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
