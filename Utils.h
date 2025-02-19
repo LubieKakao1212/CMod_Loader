@@ -9,6 +9,7 @@ namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 class Utils {
+public:
 	/// <summary>
 	/// Loads runtime config specified by the config path and extracts the target framework field value.
 	/// </summary>

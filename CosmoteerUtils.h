@@ -6,6 +6,7 @@
 namespace fs = std::filesystem;
 
 class CosmoteerUtils {
+public:
 	/// <summary>
 	/// Searches for CMod Loader mod directory in Local and Workshop mods folders.
 	/// </summary>
@@ -59,4 +60,7 @@ class CosmoteerUtils {
 	/// </summary>
 	/// <returns></returns>
 	static bool inCosmoteerBinDir();
+
+private:
+	static std::optional<fs::path> FindCModLoaderModDirectoryInDirectory(fs::path dirPath);
 };
