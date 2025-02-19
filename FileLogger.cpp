@@ -1,4 +1,4 @@
-#include "string"
+#include <string>
 #include <filesystem>
 #include "Utils.h"
 #include "Variables.h"
@@ -12,7 +12,7 @@ bool initialized = false;
 std::ofstream logStream;
 bool wasLastLogMessageWithLinebreak = true;
 
-extern LogLevel logLevel;
+LogLevel logLevel = LogLevel::INFORMATIVE;
 
 static void InitializeIfNeeded() {
 	if (initialized) {

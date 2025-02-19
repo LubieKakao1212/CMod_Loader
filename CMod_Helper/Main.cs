@@ -3,6 +3,7 @@ using Cosmoteer.Mods;
 using Halfling.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 [assembly: IgnoresAccessChecksTo("Cosmoteer")]
 
@@ -30,7 +31,7 @@ namespace CMod_Helper {
         private static string cModDllPathFromWithinCModDirectory = Path.Combine("CMod", "Main.dll");
         private static string cModLoaderModDirname = "CMod_Loader";
         private static string cModLoaderDllRealFilename = "CMod_Loader";
-        private static string cModLoaderDllFakeFilename = "AVRT.dll"
+        private static string cModLoaderDllFakeFilename = "AVRT.dll";
 
         [UnmanagedCallersOnly]
         public static void InitializePatches() {

@@ -7,8 +7,9 @@
 #include <sstream>
 #include "include/coreclr_delegates.h"
 #include "include/hostfxr.h"
-#include "CosmoteerUtils.cpp"
-#include "FileLogger.cpp"
+#include "CosmoteerUtils.h"
+#include "FileLogger.h"
+#include "Variables.h"
 namespace fs = std::filesystem;
 
 #pragma comment(linker,"/export:AvCreateTaskIndex=C:\\Windows\\System32\\avrt.AvCreateTaskIndex,@1")
@@ -34,10 +35,6 @@ namespace fs = std::filesystem;
 
 //Credits to StackOverflowExcept1on for this injector
 //https://github.com/StackOverflowExcept1on/net-core-injector
-
-// this injector is loaded first into the game,
-// then it loads the helper. the helper searches for existing cmods, saving the paths to their dlls into a file.
-// then, the injector injects the cmods into the game, calling a method inside each of the loaded dlls.
 
 class Module
 {

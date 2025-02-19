@@ -1,4 +1,6 @@
-#include "string"
+#pragma once
+
+#include <string>
 #include <filesystem>
 #include "Utils.h"
 #include "Variables.h"
@@ -21,7 +23,7 @@ enum LogLevel {
 };
 
 // Current log level.
-LogLevel logLevel = LogLevel::INFORMATIVE;
+extern LogLevel logLevel;
 
 // Log a message with specified log level.
 void Log(LogLevel level, std::string msg, bool lineBreak = true);

@@ -97,6 +97,7 @@
     <ClCompile Include="CosmoteerUtils.cpp" />
     <ClCompile Include="FileLogger.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="Variables.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CosmoteerUtils.h" />
