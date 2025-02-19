@@ -29,9 +29,6 @@ namespace CMod_Helper {
 
     public class Main {
         private static string cModDllPathFromWithinCModDirectory = Path.Combine("CMod", "Main.dll");
-        private static string cModLoaderModDirname = "CMod_Loader";
-        private static string cModLoaderDllRealFilename = "CMod_Loader";
-        private static string cModLoaderDllFakeFilename = "AVRT.dll";
 
         [UnmanagedCallersOnly]
         public static void InitializePatches() {
@@ -42,7 +39,7 @@ namespace CMod_Helper {
                 return;
             }
 
-            string cwd = Utils.GetPathToCurrentDllDirectory();
+            //string cwd = Utils.GetPathToCurrentDllDirectory();
 
             //HelperLocation helperLocation = cwd.Contains("Saved Games") ? HelperLocation.LocalMods : HelperLocation.WorkshopMods;
 
@@ -97,13 +94,6 @@ namespace CMod_Helper {
             FileLog.Separator();
 
             FileLog.Log("Loading complete. Enjoy!");
-        }
-
-        /// <summary>
-        /// Check 
-        /// </summary>
-        static void CheckForCModLoaderVersionMismatch() {
-
         }
 
         /// Checks whether given directory is a valid CMod directory.

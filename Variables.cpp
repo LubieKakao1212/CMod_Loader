@@ -5,6 +5,7 @@
 #include "include/hostfxr.h"
 #include "Variables.h"
 
+const int SLEEP_BEFORE_STARTING_MS = 500;
 const int SLEEP_BEFORE_HELPER_LOAD_MS = 1000;
 const std::string LOGFILE_FILENAME = "CMod_Loader.log";
 const std::string COSMOTEER_APP_ID = "799600";

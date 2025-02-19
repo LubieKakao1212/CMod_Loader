@@ -259,6 +259,13 @@ DWORD WINAPI dllThread(HMODULE hModule)
 	// useful logging done right
 	LogYap("AWOOOOOGA");
 	LogYap("Loader starting");
+
+	LogYap("Sleeping for a bit before doing anything");
+
+	// Give the game time to initialize
+	// Should uhhh, hopefully fix some mysterious crashes.
+	Sleep(SLEEP_BEFORE_STARTING_MS);
+
 	LogYap("Checking where we are");
 
 	// shouldn't happen, but maybe

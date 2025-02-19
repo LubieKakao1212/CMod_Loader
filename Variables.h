@@ -1,9 +1,10 @@
 #pragma once
 
-#include "string"
+#include <string>
 #include "include/coreclr_delegates.h"
 #include "include/hostfxr.h"
 
+extern const int SLEEP_BEFORE_STARTING_MS;
 extern const int SLEEP_BEFORE_HELPER_LOAD_MS;
 extern const std::string LOGFILE_FILENAME;
 extern const std::string COSMOTEER_APP_ID;
