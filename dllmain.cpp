@@ -7,8 +7,8 @@
 #include <sstream>
 #include "include/coreclr_delegates.h";
 #include "include/hostfxr.h";
-#include "include/json.hpp";
-using json = nlohmann::json;
+#include "CosmoteerUtils.cpp"
+#include "FileLogger.cpp"
 namespace fs = std::filesystem;
 
 #pragma comment(linker,"/export:AvCreateTaskIndex=C:\\Windows\\System32\\avrt.AvCreateTaskIndex,@1")
@@ -171,208 +171,58 @@ std::string InitResultToStr(InitializeResult result)
 	return data;
 }
 
-// ====================================
-
-const std::string LOGFILE_FILENAME = "CMod_Loader.log";
-const int COSMOTEER_APP_ID = 799600;
-const std::string COSMOTEER_EXE_FILENAME = "Cosmoteer.exe";
-const std::string COSMOTEER_DLL_FILENAME = "Cosmoteer.dll";
-const std::string COSMOTEER_DLL_CONFIG_FILENAME = "Cosmoteer.runtimeconfig.json";
-const std::string CMOD_HELPER_DLL_FILENAME = "CMod_Helper.dll";
-const std::string CMOD_HELPER_CONFIG_FILENAME = "CMod_Helper.runtimeconfig.json";
-// first is the path to the class, second is the dll filename without ext
-const char_t* CMOD_HELPER_CLASS_ENTRYPOINT_NAME = L"CMod_Helper.Main, CMod_Helper";
-const char_t* CMOD_HELPER_METHOD_ENTRYPOINT_NAME = L"InitializePatches";
-
-std::string LOGFILE_PATH = "";
 
 // ====================================
 
-std::string GetExecutableDirectory() {
-	char buffer[MAX_PATH];
-	GetModuleFileNameA(NULL, buffer, MAX_PATH);
-	std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+/// <summary>
+/// Shows a message box window with given message.
+/// </summary>
+/// <param name="message"></param>
+void ShowInfoMessageBox(std::string message) {
+	message = "CMod Loader message:\n" + message;
 
-	return std::string(buffer).substr(0, pos);
+	MessageBoxA(NULL, message.c_str(), "CMod Loader Message", MB_OK | MB_ICONINFORMATION);
 }
 
-void SetupLog() {
-	fs::path logfilePath = GetExecutableDirectory();
-	logfilePath /= LOGFILE_FILENAME;
-
-	if (fs::exists(logfilePath)) {
-		fs::remove(logfilePath);
-	}
-
-	LOGFILE_PATH = logfilePath.string();
-}
-
-void Log(std::string msg, bool newLine = true) {
-	std::ofstream log(LOGFILE_PATH, std::ios_base::app | std::ios_base::out);
-	log << msg;
-
-	if (newLine) {
-		log << std::endl;
-	}
-}
-
-// ====================================
-
-// returns a list of directory paths for a given path.
-// based on: https://stackoverflow.com/a/46589798
-std::vector<std::string> GetDirectories(const std::string& path) {
-	std::vector<std::string> dirs;
-	for (auto& iterPath : std::filesystem::directory_iterator(path))
-		if (iterPath.is_directory())
-			dirs.push_back(iterPath.path().string());
-	return dirs;
-}
-
-
+/// <summary>
+/// Shows a message box window custmozied for warning messages with given message.
+/// </summary>
+/// <param name="message"></param>
 void ShowWarningMessageBox(std::string message) {
+	message = "CMod Loader warning:\n" + message;
+
 	MessageBoxA(NULL, message.c_str(), "CMod Loader Warning", MB_OK | MB_ICONWARNING);
 }
 
+/// <summary>
+/// Shows a message box window custmozied for error messages with given message.
+/// Also adds a note saying that no CMods will be loaded, assuming this method is called right before stopping execution due to errors.
+/// </summary>
+/// <param name="message"></param>
 void ShowErrorMessageBox(std::string message) {
+	message = "CMod Loader error:\n" + message + "\n\nThe game will load, but no CMods will be loaded.";
+
 	MessageBoxA(NULL, message.c_str(), "CMod Loader Error", MB_OK | MB_ICONERROR);
 }
 
-std::string GenerateErrorStr(std::string message) {
-	return "CMod Loader error:\n" + message + "\n\nThe game will load, but no CMods will be loaded.";
-}
 
-bool AssertDirectoryIsValidCModHelperDirectory(fs::path dirPath, bool suppressMessages = false) {
-	// check dll
-	fs::path dllPath = dirPath;
-	dllPath /= CMOD_HELPER_DLL_FILENAME;
-	if (!fs::exists(dllPath)) {
-		if (!suppressMessages)
-			ShowErrorMessageBox(GenerateErrorStr(CMOD_HELPER_DLL_FILENAME + " not found within the CMod Helper folder. Make sure CMod Helper mod is installed propertly. \nCMod Helper folder: \n" + dirPath.string()));
-		return false;
-	}
 
-	// check dll config
-	fs::path dllConfigPath = dirPath;
-	dllConfigPath /= CMOD_HELPER_CONFIG_FILENAME;
-	if (!fs::exists(dllConfigPath)) {
-		if (!suppressMessages)
-			ShowErrorMessageBox(GenerateErrorStr(CMOD_HELPER_CONFIG_FILENAME + " not found within the CMod Helper folder.Make sure CMod Helper mod is installed propertly. \nCMod Helper folder : \n" + dirPath.string()));
-		return false;
-	}
-
-	return true;
-}
 
 /// <summary>
-/// Tries to find the CMod Helper directory in the local mods directory.
+/// Check whether a new version of the Loader is available in Local/Workshop mods.
+/// Show an notice message to the user if a new version is found.
 /// </summary>
-/// <returns></returns>
-std::optional<fs::path> FindCModHelperFolderInLocalMods() {
-	char* userDirPathCStr = getenv("USERPROFILE");
-	if (userDirPathCStr == NULL) {
-		//ShowErrorMessageBox(GenerateErrorStr("Path to the user profile does not exist. This indicates a problem with the CMod Loader itself."));
-		return {};
-	}
-	std::string userDirPath = std::string(userDirPathCStr);
+void CheckForLoaderUpdates() {
+	LogYap("Checking for Loader updates by looking through installed mods.");
 
-	fs::path fullPath = userDirPath;
-	fullPath /= "Saved Games";
-	fullPath /= "Cosmoteer";
-	if (!fs::exists(fullPath)) {
-		//ShowErrorMessageBox(GenerateErrorStr("Path to user profile >> Saved Games >> Cosmoteer folder does not exist. This indicates a problem with the CMod Loader itself. \nPath: \n" + fullPath.string()));
-		return {};
+	std::optional<fs::path> cModLoaderModDir = CosmoteerUtils::FindCModLoaderModDirectory();
+	if (!cModLoaderModDir.has_value()) {
+		std::string msg = "Failed to find the Loader mod folder when checking for updates.";
+		LogErrrrrrrr(msg);
+		ShowErrorMessageBox(msg);
 	}
 
-	std::vector<std::string> steamProfileDirs = GetDirectories(fullPath.string());
-	if (steamProfileDirs.size() == 0) {
-		//ShowErrorMessageBox(GenerateErrorStr("No Steam profile dirs found within Saved Games >> Cosmoteer folder. This indicates a problem with the CMod Loader itself. \nPath: \n" + fullPath.string()));
-		return {};
-	} else if (steamProfileDirs.size() > 1) {
-		//ShowErrorMessageBox(GenerateErrorStr("Found multiple Steam profile dirs within Saved Games >> Cosmoteer folder. Multiple profiles are not supported. \nPath: \n" + fullPath.string()));
-		return {};
-	}
-
-	fullPath /= steamProfileDirs[0];
-	fullPath /= "Mods";
-	if (!fs::exists(fullPath)) {
-		//ShowErrorMessageBox(GenerateErrorStr("Mods folder not found in Saved Games >> Cosmoteer folder. Make sure it exists and contains the CMod Helper mod. \nPath: \n" + fullPath.string()));
-		return {};
-	}
-
-	fullPath /= "cmod_helper";
-	if (!fs::exists(fullPath)) {
-		//ShowErrorMessageBox(GenerateErrorStr("CMod Helper mod folder not found. Make sure CMod Heleper mod is installed. \nExpected folder at path: \n" + fullPath.string()));
-		return {};
-	}
-
-	return fullPath;
-}
-
-std::optional<fs::path> FindCModHelperFolderInWorkshopMods() {
-	fs::path cosmoteerBinDir(GetExecutableDirectory());
-
-	// steamapps\common\Cosmoteer\bin\
-	// ^^^^^^^^^                  ^^^
-	// to here                    go from here
-	fs::path steamappsDir = cosmoteerBinDir.parent_path().parent_path().parent_path();
-
-	// find workshop mods
-	fs::path fullPath = steamappsDir;
-	fullPath /= "workshop";
-	fullPath /= "content";
-	fullPath /= std::to_string(COSMOTEER_APP_ID);
-	if (!fs::exists(fullPath)) {
-		ShowErrorMessageBox(GenerateErrorStr("Workshop mods folder path does not exist. Make sure CMod Heleper mod is installed. \nExpected folder at path: \n" + fullPath.string()));
-		return {};
-	}
-
-	// look through the mod files searching for the Helper
-	fs::path cModHelperDirPath = "";
-	for (std::string dirPath : GetDirectories(fullPath.string())) {
-		fs::path cModHelperPotentialDirPath = dirPath;
-		cModHelperPotentialDirPath /= "dirPath";
-
-		if (AssertDirectoryIsValidCModHelperDirectory(cModHelperPotentialDirPath, true)) {
-			cModHelperDirPath = cModHelperPotentialDirPath;
-		}
-	}
-	if (cModHelperDirPath == "") {
-		ShowErrorMessageBox(GenerateErrorStr("CMod Helper not found in the Workshop mods folder. Make sure CMod Heleper mod is installed. \nWorkshop mods folder: \n" + fullPath.string()));
-		return {};
-	}
-
-	return cModHelperDirPath;
-}
-
-/// <summary>
-/// Returns path to a valid CMod Helper directory.
-/// An install is considered valid if it has both the dll and the runtimeconfig files of the Helper.
-/// 
-/// First, the local mods directory is checked. If Helper is not found there, the Workshop directory is checked next.
-/// 
-/// In case of an invalid install (missing dll or/and runtimeconfig), an early return with an empty result is executed.
-/// </summary>
-/// <returns></returns>
-std::optional<fs::path> FindCModHelperDirPath() {
-	std::optional<fs::path> helperDirPathInLocalMods = FindCModHelperFolderInLocalMods();
-	if (helperDirPathInLocalMods.has_value()) {
-		if (AssertDirectoryIsValidCModHelperDirectory(helperDirPathInLocalMods.value())) {
-			return helperDirPathInLocalMods.value();
-		} else {
-			return {};
-		}
-	}
-
-	std::optional<fs::path> helperDirPathInWorkshopMods = FindCModHelperFolderInWorkshopMods();
-	if (helperDirPathInWorkshopMods.has_value()) {
-		if (AssertDirectoryIsValidCModHelperDirectory(helperDirPathInWorkshopMods.value())) {
-			return helperDirPathInWorkshopMods.value();
-		} else {
-			return {};
-		}
-	}
-
-	return {};
+	// todo
 }
 
 // ====================================
@@ -380,98 +230,101 @@ std::optional<fs::path> FindCModHelperDirPath() {
 DWORD WINAPI dllThread(HMODULE hModule)
 {
 	DWORD dwExit = 0;
-	SetupLog();
 
 	// useful logging done right
-	Log("AWOOOOOGA");
-	Log("Loader started");
+	LogYap("AWOOOOOGA");
+	LogYap("Loader starting");
+	LogYap("Checking where we are");
 
-	// assert we are where we need to be (in the Cosmoteer bin dir)
-
-	Log("Locating current working directory");
-	std::string cosmoteerBinDirPath = GetExecutableDirectory();
-
-	Log("Locating Cosmoteer executable");
-	fs::path cosmoteerExePath = cosmoteerBinDirPath;
-	cosmoteerExePath /= COSMOTEER_EXE_FILENAME;
-	if (!fs::exists(cosmoteerExePath)) {
-		ShowErrorMessageBox(GenerateErrorStr(COSMOTEER_EXE_FILENAME + " not found in the exectuable folder. Make sure the CMod Loader is installed correctly. Executable folder: " + cosmoteerBinDirPath));
+	// shouldn't happen, but maybe
+	if (!CosmoteerUtils::inCosmoteerBinDir()) {
+		std::string msg = "Not in Cosmoteer directory. Huh?";
+		LogErrrrrrrr(msg);
+		ShowErrorMessageBox(msg);
 		return dwExit;
 	}
+
+	fs::path cosmoteerBinDirPath = Utils::GetExecutableDirectory();
 
 	// load Cosmoteer runtime config; get target framework
 
-	Log("Loading Cosmoteer runtime config");
+	LogYap("Loading Cosmoteer runtime config");
+
 	fs::path cosmoteerDllConfigPath = cosmoteerBinDirPath;
 	cosmoteerDllConfigPath /= COSMOTEER_DLL_CONFIG_FILENAME;
 
-	if (!fs::exists(cosmoteerDllConfigPath)) {
-		ShowErrorMessageBox(GenerateErrorStr(COSMOTEER_DLL_CONFIG_FILENAME + " not found in the exectuable folder. It's expected to be there, so I don't know what to tell ya >:C Executable folder: " + cosmoteerBinDirPath));
+	std::optional<std::string> cosmoteerTfmResult = Utils::ExtractTargetFrameworkFromRuntimeConfig(cosmoteerDllConfigPath);
+	if (!cosmoteerTfmResult.has_value()) {
+		std::string msg = "Failed to load Cosmoteer runtime config. It either doesn't exist or has the target framework field missing.";
+		LogErrrrrrrr(msg);
+		ShowErrorMessageBox(msg);
 		return dwExit;
 	}
+	std::string cosmoteerTfm = cosmoteerTfmResult.value();
 
-	std::ifstream cosmoteerExeConfigRs(cosmoteerDllConfigPath);
-	json cosmoteerTfm = json::parse(cosmoteerExeConfigRs)["runtimeOptions"]["tfm"];
+	LogYap("Cosmoteer target framework: " + cosmoteerTfm);
 
 	// find Helper dir
 
-	Log("Searching for Helper");
-	std::optional<fs::path> cModHelperDirPathResult = FindCModHelperDirPath();
+	LogYap("Searching for Helper");
+	std::optional<fs::path> cModHelperDirPathResult = CosmoteerUtils::FindCModHelperModDirectory();
 	if (!cModHelperDirPathResult.has_value()) {
-		Log("Helper not found anywhere.");
+		std::string msg = "CMod Helper mod not found. Make sure it is installed.";
+		LogErrrrrrrr(msg);
+		ShowErrorMessageBox(msg);
 		return dwExit;
 	}
 	fs::path cModHelperDirPath = cModHelperDirPathResult.value();
 
-	Log("Helper directory found: " + cModHelperDirPath.string());
-
-	// get Helper dll path
-
-	fs::path cModHelperDllPath = cModHelperDirPath;
-	cModHelperDllPath /= CMOD_HELPER_DLL_FILENAME;
+	LogYap("Helper found at: " + cModHelperDirPath.string());
 
 	// load Helper runtime config; get target framework
 
-	Log("Loading Helper runtime config");
-	fs::path cModHelperDllConfigPath = cModHelperDirPath;
-	cModHelperDllConfigPath /= CMOD_HELPER_CONFIG_FILENAME;
+	fs::path cModHelperConfigPath = cModHelperDirPath;
+	cModHelperConfigPath /= CMOD_HELPER_CONFIG_FILENAME;
 
-	if (!fs::exists(cModHelperDllConfigPath)) {
-		ShowErrorMessageBox(GenerateErrorStr(CMOD_HELPER_CONFIG_FILENAME + " not found in the CMod Helper folder. Make sure the CMod Helper is installed properly. CMod Helper folder: " + cModHelperDirPath.string()));
+	std::optional<std::string> cModHelperTfmResult = Utils::ExtractTargetFrameworkFromRuntimeConfig(cModHelperConfigPath);
+	if (!cModHelperTfmResult.has_value()) {
+		std::string msg = "Failed to load CMod Helper runtime config. Make sure it's installed correctly.";
+		LogErrrrrrrr(msg);
+		ShowErrorMessageBox(msg);
 		return dwExit;
 	}
+	std::string cModHelperTfm = cModHelperTfmResult.value();
 
-	std::ifstream cModHelperConfigRs(cModHelperDllConfigPath);
-	json cModHelperTfm = json::parse(cModHelperConfigRs)["runtimeOptions"]["tfm"];
+	LogYap("CMod Helper target framework: " + cosmoteerTfm);
 
 	// check target framework compatability between Cosmoteer and CMod Helper
-	Log("Comparing target frameworks between Cosmoteer and Helper");
-	if (cosmoteerTfm.dump() != cModHelperTfm.dump()) {
-		Log("Error: Mismatch between framework versions of Cosmoteer (" + cosmoteerTfm.dump() + ") and CMod Helper (" + cModHelperTfm.dump() + ")");
-		ShowErrorMessageBox(GenerateErrorStr("Mismatch between framework versions of Cosmoteer (" + cosmoteerTfm.dump() + ") and CMod Helper (" + cModHelperTfm.dump() + "). Make sure the installed CMod Helper is up to date. CMod Helper folder: " + cModHelperDirPath.string()));
+	LogYap("Checking for target framework combatability between Cosmoteer and CMod Helper");
+	if (cosmoteerTfm != cModHelperTfm) {
+		std::string msg = "Mismatch between target framework versions of Cosmoteer(" + cosmoteerTfm + ") and CMod Helper (" + cModHelperTfm + "). Make sure the CMod Helper is up to date.";
+		LogErrrrrrrr(msg);
+		ShowErrorMessageBox(msg);
 		return dwExit;
 	}
 
 	// load Helper dll
-	Log("Sleeping before loading Helper DLL");
+	LogYap("Sleeping before loading Helper DLL to not anger the space gods");
 
 	// Give the game time to initialize
 	// Needed for the Loader to be able to access Cosmoteer variables and such.
 	Sleep(1000);
 
-	Log("Wakey-wakey! Loading Helper DLL");
+	LogYap("Wakey-wakey! Let the Helper DLL loading commence.");
 
-	InitializeResult result = LoadDll(cModHelperDllConfigPath.c_str(), cModHelperDllConfigPath.c_str(), CMOD_HELPER_CLASS_ENTRYPOINT_NAME, CMOD_HELPER_METHOD_ENTRYPOINT_NAME);
+	fs::path cModHelperDllPath = cModHelperDirPath;
+	cModHelperDllPath /= CMOD_HELPER_DLL_FILENAME;
+
+	InitializeResult result = LoadDll(cModHelperConfigPath.c_str(), cModHelperDllPath.c_str(), CMOD_HELPER_CLASS_ENTRYPOINT_NAME, CMOD_HELPER_METHOD_ENTRYPOINT_NAME);
 	std::string resultStr = InitResultToStr(result);
-
-	//LogLine(logPath, resultStr);
 	if (resultStr != "Success") {
-		Log("Failed to load Helper DLL, reason: " + resultStr);
-		ShowErrorMessageBox(GenerateErrorStr("Failed to load CMod Helper DLL, reason: " + resultStr + ". CMod Helper folder : " + cModHelperDirPath.string()));
+		std::string msg = "Failed to load CMod Helper, reason being: " + resultStr;
+		LogErrrrrrrr(msg);
+		ShowErrorMessageBox(msg);
 		return dwExit;
 	}
 
-	Log("Helper DLL successfully loaded. Have Fun!");
+	LogYap("CMod Helper has been successfully loaded. Have Fun!");
 
 	FreeLibraryAndExitThread(hModule, 0);
 	return dwExit;
