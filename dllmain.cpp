@@ -292,7 +292,7 @@ DWORD WINAPI dllThread(HMODULE hModule)
 	LogYap("CMod Helper target framework: " + cosmoteerTfm);
 
 	// check target framework compatability between Cosmoteer and CMod Helper
-	LogYap("Checking for target framework combatability between Cosmoteer and CMod Helper");
+	LogYap("Checking for target framework compatability between Cosmoteer and CMod Helper");
 	if (cosmoteerTfm != cModHelperTfm) {
 		std::string msg = "Mismatch between target framework versions of Cosmoteer(" + cosmoteerTfm + ") and CMod Helper (" + cModHelperTfm + "). Make sure the CMod Helper is up to date.";
 		LogErrrrrrrr(msg);

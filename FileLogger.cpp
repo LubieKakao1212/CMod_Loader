@@ -54,7 +54,7 @@ void Log(LogLevel level, std::string msg, bool lineBreak) {
 		auto now = std::chrono::system_clock::now();
 		std::string formatted_time = std::format("{0:%F_%T}", now);
 
-		logStream << std::endl << "[" << formatted_time << "]" << " " << "[" << LogLevelToString << "]" << " " << msg;
+		logStream << std::endl << "[" << formatted_time << "]" << " " << "[" << LogLevelToString(level) << "]" << " " << msg;
 	} else {
 		logStream << msg;
 	}

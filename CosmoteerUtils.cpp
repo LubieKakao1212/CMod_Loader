@@ -4,6 +4,7 @@
 #include <numeric>
 #include "Variables.h"
 #include "CosmoteerUtils.h"
+#include "FileLogger.h"
 namespace fs = std::filesystem;
 
 std::optional<fs::path> CosmoteerUtils::FindCModLoaderModDirectory() {
@@ -48,13 +49,17 @@ std::optional<fs::path> CosmoteerUtils::FindCModHelperModDirectory() {
 
 	std::optional<fs::path> localModsDirPathResult = FindLocalModsDirectoryPath();
 	if (localModsDirPathResult.has_value()) {
+		LogBoring("local mods directory path found: " + localModsDirPathResult.value().string());
 		modsLocations.push_back(localModsDirPathResult.value());
 	}
+
 
 	std::optional<fs::path> workshopModsDirPathResult = FindWorkshopModsDirectoryPath();
 	if (workshopModsDirPathResult.has_value()) {
 		modsLocations.push_back(workshopModsDirPathResult.value());
+		LogBoring("workshop mods directory path found: " + workshopModsDirPathResult.value().string());
 	}
+
 
 	if (modsLocations.size() == 0) {
 		return {};
@@ -63,6 +68,8 @@ std::optional<fs::path> CosmoteerUtils::FindCModHelperModDirectory() {
 	for (auto& modsDirPath : modsLocations) {
 		std::optional<fs::path> cModHelperDirResult = FindCModHelperModDirectoryInDirectory(modsDirPath);
 		if (cModHelperDirResult.has_value()) {
+			LogBoring("Found potential CMod Helper mod folder: " + cModHelperDirResult.value().string());
+
 			// found dll, but runtime config might be missing
 			fs::path cModHelperModDirPath = cModHelperDirResult.value();
 
@@ -80,8 +87,7 @@ std::optional<fs::path> CosmoteerUtils::FindCModHelperModDirectory() {
 std::optional<fs::path> CosmoteerUtils::FindCModHelperModDirectoryInDirectory(fs::path dirPath) {
 	std::optional<fs::path> pathToCModHelperDll = FindFilenameInImmediateSubdirectories(dirPath, CMOD_HELPER_DLL_FILENAME);
 	if (pathToCModHelperDll.has_value()) {
-		// not actual filename, but a name of a directory
-		return pathToCModHelperDll.value().parent_path().filename();
+		return pathToCModHelperDll.value().parent_path();
 	}
 
 	return {};
@@ -92,7 +98,7 @@ std::optional<fs::path> CosmoteerUtils::FindFilenameInImmediateSubdirectories(fs
 
 	for (auto& subDir : subDirs) {
 		fs::path filePath = subDir;
-		subDir /= filename;
+		filePath /= filename;
 
 		if (fs::exists(filePath)) {
 			return filePath;
