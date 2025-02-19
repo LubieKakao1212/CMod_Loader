@@ -97,12 +97,15 @@
     <ClCompile Include="CosmoteerUtils.cpp" />
     <ClCompile Include="FileLogger.cpp" />
     <ClCompile Include="Utils.cpp" />
-    <ClCompile Include="Variables.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CosmoteerUtils.h" />
+    <ClInclude Include="FileLogger.h" />
     <ClInclude Include="include\coreclr_delegates.h" />
     <ClInclude Include="include\hostfxr.h" />
     <ClInclude Include="include\json.hpp" />
+    <ClInclude Include="Utils.h" />
+    <ClInclude Include="Variables.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Static\Install.ps1" />

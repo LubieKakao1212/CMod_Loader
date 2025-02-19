@@ -1,6 +1,8 @@
-#include "string";
-#include "include/coreclr_delegates.h";
-#include "include/hostfxr.h";
+#pragma once
+
+#include "string"
+#include "include/coreclr_delegates.h"
+#include "include/hostfxr.h"
 
 const int SLEEP_BEFORE_HELPER_LOAD_MS = 1000;
 const std::string LOGFILE_FILENAME = "CMod_Loader.log";

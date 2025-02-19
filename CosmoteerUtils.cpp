@@ -1,17 +1,13 @@
 #include <string>
 #include <filesystem>
-#include "Utils.cpp"
+#include "Utils.h"
 #include <numeric>
-#include "Variables.cpp"
+#include "Variables.h"
+#include "CosmoteerUtils.h"
 namespace fs = std::filesystem;
 
-static class CosmoteerUtils {
+class CosmoteerUtils {
 public:	
-
-	/// <summary>
-	/// Searches for CMod Loader mod directory in Local and Workshop mods folders.
-	/// </summary>
-	/// <returns></returns>
 	static std::optional<fs::path> FindCModLoaderModDirectory() {
 		std::vector<fs::path> modsLocations{};
 
@@ -39,23 +35,6 @@ public:
 		return {};
 	}
 
-	/// <summary>
-	/// Searches for CMod Loader mod directory in specified directory.
-	/// </summary>
-	static std::optional<fs::path> FindCModLoaderModDirectoryInDirectory(fs::path dirPath) {
-		std::optional<fs::path> pathToCModLoadDll = FindFilenameInImmediateSubdirectories(dirPath, CMOD_LOADER_DLL_FILENAME);
-		if (pathToCModLoadDll.has_value()) {
-			// not actual filename, but a name of a directory
-			return pathToCModLoadDll.value().parent_path().filename();
-		}
-
-		return {};
-	}
-
-	/// <summary>
-	/// Searches for CMod Helper mod directory in Local and Workshop mods folders.
-	/// </summary>
-	/// <returns></returns>
 	static std::optional<fs::path> FindCModHelperModDirectory() {
 		std::vector<fs::path> modsLocations{};
 
@@ -90,9 +69,6 @@ public:
 		return {};
 	}
 
-	/// <summary>
-	/// Searches for CMod Helper mod directory in specified directory.
-	/// </summary>
 	static std::optional<fs::path> FindCModHelperModDirectoryInDirectory(fs::path dirPath) {
 		std::optional<fs::path> pathToCModHelperDll = FindFilenameInImmediateSubdirectories(dirPath, CMOD_HELPER_DLL_FILENAME);
 		if (pathToCModHelperDll.has_value()) {
@@ -103,11 +79,6 @@ public:
 		return {};
 	}
 
-	/// <summary>
-	/// Searches for a specific filename in immediate subdirectories of given directory.
-	/// 
-	/// Returns path to the found file, if any.
-	/// </summary>
 	static std::optional<fs::path> FindFilenameInImmediateSubdirectories(fs::path dirPath, std::string filename) {
 		std::vector<fs::path> subDirs = Utils::GetDirectories(dirPath);
 
@@ -123,10 +94,6 @@ public:
 		return {};
 	}
 
-	/// <summary>
-	/// Search for the Workshop mods folder.
-	/// </summary>
-	/// <returns></returns>
 	static std::optional<fs::path> FindWorkshopModsDirectoryPath() {
 		// make sure we're in the Bin dir
 		if (!inCosmoteerBinDir()) {
@@ -151,10 +118,6 @@ public:
 		return fullPath;
 	}
 
-	/// <summary>
-	/// Search for the Local mods folder.
-	/// </summary>
-	/// <returns></returns>
 	static std::optional<fs::path> FindLocalModsDirectoryPath() {
 		std::optional<fs::path> savedGamesCosmoteerDirResult = FindCosmoteerDirInSavedGames();
 		if (!savedGamesCosmoteerDirResult.has_value()) {
@@ -178,10 +141,6 @@ public:
 		return fullPath;
 	}
 
-	/// <summary>
-	/// Get current user's steam ID based on Cosmoteer data in Saved Games.
-	/// </summary>
-	/// <param name="cosmoteerSavedGamesDirPath"></param>
 	static std::optional<std::string> FindSteamId() {
 		std::optional<fs::path> savedGamesCosmoteerDirResult = FindCosmoteerDirInSavedGames();
 		if (!savedGamesCosmoteerDirResult.has_value()) {
@@ -224,10 +183,6 @@ public:
 		return resultingSteamId;
 	}
 
-	/// <summary>
-	/// Searches for the Cosmoteer directory in the saved games folder.
-	/// </summary>
-	/// <returns></returns>
 	static std::optional<fs::path> FindCosmoteerDirInSavedGames() {
 		char* userDirPathCStr = getenv("USERPROFILE");
 		if (userDirPathCStr == NULL) {
@@ -247,14 +202,21 @@ public:
 		return fullPath;
 	}
 
-	/// <summary>
-	/// Check if we are in Cosmoteer Bin directory.
-	/// </summary>
-	/// <returns></returns>
 	static bool inCosmoteerBinDir() {
 		fs::path cosmoteerExePath = Utils::GetExecutableDirectory();
 		cosmoteerExePath /= "Cosmoteer.exe";
 
 		return fs::exists(cosmoteerExePath);
+	}
+
+private:
+	static std::optional<fs::path> FindCModLoaderModDirectoryInDirectory(fs::path dirPath) {
+		std::optional<fs::path> pathToCModLoadDll = FindFilenameInImmediateSubdirectories(dirPath, CMOD_LOADER_DLL_FILENAME);
+		if (pathToCModLoadDll.has_value()) {
+			// not actual filename, but a name of a directory
+			return pathToCModLoadDll.value().parent_path().filename();
+		}
+
+		return {};
 	}
 };

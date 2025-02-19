@@ -5,8 +5,8 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include "include/coreclr_delegates.h";
-#include "include/hostfxr.h";
+#include "include/coreclr_delegates.h"
+#include "include/hostfxr.h"
 #include "CosmoteerUtils.cpp"
 #include "FileLogger.cpp"
 namespace fs = std::filesystem;
