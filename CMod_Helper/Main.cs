@@ -1,6 +1,8 @@
 ﻿using Cosmoteer;
 using Cosmoteer.Mods;
 using Halfling.IO;
+using Halfling.ObjectText;
+using HarmonyLib;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -28,14 +30,18 @@ namespace CMod_Helper {
     }
 
     public class Main {
+        public static List<(string dllAbsPath, Assembly? assembly, string? targetNamespace)> cModsToLoad = new();
+        public static Harmony harmony;
+
         private static string cModDllPathFromWithinCModDirectory = Path.Combine("CMod", "Main.dll");
+
 
         [UnmanagedCallersOnly]
         public static void InitializePatches() {
-            FileLog.Log("Initializing patches");
+            FileLogger.LogInfo("Beep boop");
 
             if(GameApp.IsNoModsMode) {
-                FileLog.Log("Game is launched with mods disabled. No CMods will be loaded.");
+                FileLogger.LogInfo("Game is launched with mods disabled. No CMods will be loaded.");
                 return;
             }
 
@@ -43,10 +49,10 @@ namespace CMod_Helper {
 
             //HelperLocation helperLocation = cwd.Contains("Saved Games") ? HelperLocation.LocalMods : HelperLocation.WorkshopMods;
 
-            FileLog.Separator();
-            FileLog.Log("Processing Mods:");
+            //FileLogger.Separator();
+            FileLogger.LogInfo("Discovering Mods:");
 
-            List<(AbsolutePath absolutePath, string modInstallSourceStr, string modDirname)> cModsToLoad = new();
+            //List<(AbsolutePath absolutePath, string modInstallSourceStr, string modDirname)> cModsToLoad = new();
             foreach((AbsolutePath absolutePath, ModInstallSource modInstallSource, string workshopId) in ModInfo.GetAllModFolders()) {
                 string modInstallSourceStr;
                 switch(modInstallSource) {
@@ -67,33 +73,42 @@ namespace CMod_Helper {
                 string modDirname = GetPathLastBit(absolutePath);
 
                 if(!IsCModModDirectory(absolutePath)) {
-                    FileLog.Log($"\t{modDirname} - Non-CMod [{modInstallSourceStr}]");
+                    FileLogger.LogInfo($"\t{modDirname} - Non-CMod [{modInstallSourceStr}]");
                     continue;
                 }
 
                 if(!Settings.EnabledMods.Contains(absolutePath)) {
-                    FileLog.Log($"\t{modDirname} - CMod, Disabled [{modInstallSourceStr}]");
+                    FileLogger.LogInfo($"\t{modDirname} - CMod, Disabled [{modInstallSourceStr}]");
                     continue;
                 }
 
-                FileLog.Log($"\t{modDirname} - CMod, TO BE LOADED [{modInstallSourceStr}]");
-                cModsToLoad.Add((absolutePath, modInstallSourceStr, modDirname));
-            }
-
-            FileLog.Separator();
-
-            FileLog.Log("Loading Mods:");
-
-            foreach((AbsolutePath absolutePath, string modInstallSourceStr, string modDirname) in cModsToLoad) {
-                FileLog.Log($"\t{modDirname} - Loading [{modInstallSourceStr}]");
+                FileLogger.LogInfo($"\t{modDirname} - CMod, TO BE LOADED [{modInstallSourceStr}]");
 
                 string dllPath = Path.Combine(absolutePath, cModDllPathFromWithinCModDirectory);
-                LoadModDll(dllPath);
+
+                cModsToLoad.Add((dllPath, null, null));
             }
 
-            FileLog.Separator();
+            FileLogger.Separator();
 
-            FileLog.Log("Loading complete. Enjoy!");
+            FileLogger.LogInfo("Invoking hooks by patching");
+
+            harmony = new Harmony("cmod_core.aliser.helper");
+            var assembly = Assembly.GetExecutingAssembly();
+            harmony.PatchAll(assembly);
+
+            //FileLogger.LogInfo("All done. Enjoy!");
+
+            //FileLog.Log("Loading Mods:");
+
+            //foreach((AbsolutePath absolutePath, string modInstallSourceStr, string modDirname) in cModsToLoad) {
+            //    FileLog.Log($"\t{modDirname} - Loading [{modInstallSourceStr}]");
+
+            //    string dllPath = Path.Combine(absolutePath, cModDllPathFromWithinCModDirectory);
+            //    LoadModDll(dllPath);
+            //}
+
+            //FileLog.Separator();
         }
 
         /// Checks whether given directory is a valid CMod directory.
@@ -112,19 +127,6 @@ namespace CMod_Helper {
             return path.ToString().Split(Path.DirectorySeparatorChar).Last();
         }
 
-        public static void LoadModDll(string dllAbsPath) {
-            string dllFilenameWithoutExt = Path.GetFileNameWithoutExtension(dllAbsPath);
-
-            Assembly assembly = Assembly.LoadFrom(dllAbsPath);
-
-            Type? classType = assembly.GetType("CMod.Main");
-            if(classType == null) throw new Exception("No main class type.");
-            MethodInfo? methodInfo = classType.GetMethod("InitializePatches", BindingFlags.Static | BindingFlags.Public);
-            if(methodInfo == null) throw new Exception("No methodinfo.");
-
-            methodInfo.Invoke(null, null);
-        }
-
         /// <summary>
         /// Checks if the given path is a directory.
         /// </summary>
@@ -137,5 +139,116 @@ namespace CMod_Helper {
 
             return File.GetAttributes(path).HasFlag(FileAttributes.Directory);
         }
+
+
+        /// <summary>
+        /// Loads CMods defined in the list of cmods to load and calling a specified method in 'Main' class inside of the predefined mod assembly.
+        /// </summary>
+        /// <param name="methodName"></param>
+        /// <exception cref="Exception"></exception>
+        public static void TryLoadCMods(string methodName) {
+            for(int i = 0; i < cModsToLoad.Count; i++) {
+                (string dllAbsPath, Assembly? assembly, string? targetNamespace) = cModsToLoad[i];
+
+                FileLogger.LogInfo("Processing CMod: " + dllAbsPath);
+
+                // load mod assembly and find target namespace on first load call, save for further uses.
+                if(assembly == null || targetNamespace == null) {
+                    assembly = Assembly.LoadFrom(dllAbsPath);
+
+                    string[] namespaceMatches = assembly.GetTypes()
+                         .Select(t => t.Namespace)
+                         .OfType<string>()
+                         .Where(n => n.StartsWith("CModEntrypoint"))
+                         .Distinct()
+                         .ToArray();
+
+                    if(namespaceMatches.Length == 0) {
+                        string msg = $"Entrypoint namespace 'CModEntrypoint*' not found for CMod: {dllAbsPath}. Define a namespace starting with 'CModEntrypoint' and a public 'Main' class to supress the error.";
+                        FileLogger.LogFatal(msg);
+                        throw new Exception(msg);
+                    } else if(namespaceMatches.Length > 1) {
+                        string msg = $"Found multiple entrypoint namespaces 'CModEntrypoint*' for CMod: {dllAbsPath}. Make sure only one such namespace is defined.";
+                        FileLogger.LogFatal(msg);
+                        throw new Exception(msg);
+                    }
+
+                    targetNamespace = namespaceMatches[0];
+
+                    cModsToLoad[i] = (dllAbsPath, assembly, targetNamespace);
+                }
+
+                Type? classType = assembly.GetType($"{targetNamespace}.Main");
+                if(classType == null) {
+                    string msg = $"'Main' class not found in CMod: {dllAbsPath}. Make sure the class is defined and public.";
+                    FileLogger.LogFatal(msg);
+                    throw new Exception(msg);
+                }
+
+                MethodInfo? methodInfo = classType.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public);
+                if(methodInfo == null) {
+                    continue;
+                }
+
+                FileLogger.LogInfo($"Invoking {methodName}()");
+
+                methodInfo.Invoke(null, null);
+            }
+        }
     }
+
+    [HarmonyPatch(typeof(ModInfo))]
+    [HarmonyPatch("ApplyPreLoadMods")]
+    [HarmonyPatch(new Type[] { typeof(OTFile) })]
+    static class Patch_ApplyPreLoadMods {
+        public static void Prefix() {
+            FileLogger.LogInfo("Patching Cosmoteer.Mods.ModInfo.ApplyPreLoadMods() [Prefix]");
+
+            Main.TryLoadCMods("Pre_ApplyPreLoadMods");
+            FileLogger.Separator();
+
+            var original = typeof(ModInfo).GetMethod("ApplyPreLoadMods", new Type[] { typeof(OTFile) });
+            Main.harmony.Unpatch(original, HarmonyPatchType.Prefix);
+        }
+
+        public static void Postfix() {
+            FileLogger.LogInfo("Patching Cosmoteer.Mods.ModInfo.ApplyPreLoadMods() [Postfix]");
+
+            Main.TryLoadCMods("Post_ApplyPreLoadMods");
+
+            FileLogger.Separator();
+
+            var original = typeof(ModInfo).GetMethod("ApplyPreLoadMods", new Type[] { typeof(OTFile) });
+            Main.harmony.Unpatch(original, HarmonyPatchType.Postfix);
+        }
+    }
+
+    [HarmonyPatch(typeof(ModInfo))]
+    [HarmonyPatch("ApplyPostLoadMods")]
+    [HarmonyPatch(new Type[] { })]
+    static class Patch_ApplyPostLoadMods {
+        public static void Prefix() {
+            FileLogger.LogInfo("Patching Cosmoteer.Mods.ModInfo.ApplyPostLoadMods() [Prefix]");
+
+            Main.TryLoadCMods("Pre_ApplyPostLoadMods");
+
+            FileLogger.Separator();
+
+            var original = typeof(ModInfo).GetMethod("ApplyPostLoadMods", new Type[] { });
+            Main.harmony.Unpatch(original, HarmonyPatchType.Prefix);
+        }
+
+        public static void Postfix() {
+            FileLogger.LogInfo("Patching Cosmoteer.Mods.ModInfo.ApplyPostLoadMods() [Postfix]");
+
+            Main.TryLoadCMods("Post_ApplyPostLoadMods");
+
+            FileLogger.Separator();
+
+            var original = typeof(ModInfo).GetMethod("ApplyPostLoadMods", new Type[] { });
+            Main.harmony.Unpatch(original, HarmonyPatchType.Postfix);
+        }
+    }
+
 }
+

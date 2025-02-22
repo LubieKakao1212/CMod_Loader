@@ -7,7 +7,6 @@
 #include "FileLogger.h"
 namespace fs = std::filesystem;
 
-//std::string LOGFILE_PATH = "";
 bool initialized = false;
 std::ofstream logStream;
 bool wasLastLogMessageWithLinebreak = true;
@@ -40,21 +39,22 @@ std::string LogLevelToString(LogLevel logLevel) {
 		case LogLevel::UH_OH:
 			return "WARNING";
 		case LogLevel::ERRRRRRRR:
-			return "ERROR";
+			return "ERROR";		
+		case LogLevel::SILKSONG_CAME_OUT:
+			return "FATAL";
 		default:
-			throw std::runtime_error("Unknown log level: " + logLevel);
+			throw std::runtime_error("Unknown log level for file logger: " + logLevel);
 	}
 }
 
-// Log a message with specified log level.
 void Log(LogLevel level, std::string msg, bool lineBreak) {
 	InitializeIfNeeded();
 
 	if (lineBreak == true) {
 		auto now = std::chrono::system_clock::now();
-		std::string formatted_time = std::format("{0:%F_%T}", now);
+		std::string formattedTime = std::format("{0:%F %T}", now);
 
-		logStream << std::endl << "[" << formatted_time << "]" << " " << "[" << LogLevelToString(level) << "]" << " " << msg;
+		logStream << std::endl << "[" << formattedTime << "]" << " " << "[" << LogLevelToString(level) << "]" << " " << msg;
 	} else {
 		logStream << msg;
 	}
@@ -63,27 +63,22 @@ void Log(LogLevel level, std::string msg, bool lineBreak) {
 	logStream.flush();
 }
 
-// Debug log level.
 void LogBoring(std::string msg, bool lineBreak) {
-	Log(LogLevel::BORING, msg);
+	Log(LogLevel::BORING, msg, lineBreak);
 }
 
-// Info log level.
 void LogYap(std::string msg, bool lineBreak) {
-	Log(LogLevel::INFORMATIVE, msg);
+	Log(LogLevel::INFORMATIVE, msg, lineBreak);
 }
 
-// Warn log level.
 void LogUhOh(std::string msg, bool lineBreak) {
-	Log(LogLevel::UH_OH, msg);
+	Log(LogLevel::UH_OH, msg, lineBreak);
 }
 
-// Error log level.
 void LogErrrrrrrr(std::string msg, bool lineBreak) {
-	Log(LogLevel::ERRRRRRRR, msg);
+	Log(LogLevel::ERRRRRRRR, msg, lineBreak);
 }
 
-// Error log level.
 void LogSilksongCameOut(std::string msg, bool lineBreak) {
-	Log(LogLevel::SILKSONG_CAME_OUT, msg);
+	Log(LogLevel::SILKSONG_CAME_OUT, msg, lineBreak);
 }

@@ -11,6 +11,7 @@
     <PublicizerRuntimeStrategies>Unsafe</PublicizerRuntimeStrategies>
     <RuntimeFrameworkVersion>9.0.1</RuntimeFrameworkVersion>
     <AssemblyName>CMod_Helper</AssemblyName>
+	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +19,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Lib.Harmony" Version="2.3.5" />
   </ItemGroup>
 
   <ItemGroup>
