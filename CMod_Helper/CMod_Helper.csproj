@@ -12,6 +12,7 @@
     <RuntimeFrameworkVersion>9.0.1</RuntimeFrameworkVersion>
     <AssemblyName>CMod_Helper</AssemblyName>
 	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <ItemGroup>

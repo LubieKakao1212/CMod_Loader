@@ -105,6 +105,7 @@
     <ClInclude Include="include\coreclr_delegates.h" />
     <ClInclude Include="include\hostfxr.h" />
     <ClInclude Include="include\json.hpp" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Variables.h" />
   </ItemGroup>
@@ -118,6 +119,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Static\logo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="CMod_Loader.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

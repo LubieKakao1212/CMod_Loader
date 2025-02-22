@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+[assembly: AssemblyVersion("0.0.2")]
 [assembly: IgnoresAccessChecksTo("Cosmoteer")]
 
 namespace System.Runtime.CompilerServices {
@@ -20,8 +21,7 @@ namespace System.Runtime.CompilerServices {
     }
 }
 
-// this helper finds present cmods and saves paths to them into a file, 
-// for the dll injector to use
+
 
 namespace CMod_Helper {
     enum HelperLocation {
