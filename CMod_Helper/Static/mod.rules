@@ -7,7 +7,7 @@ ID = aliser.cmod_helper
 Name = "[CMod][Core] Helper"
 
 // The version of the mod that will be shown in the user interface. This is optional.
-Version = 0.0.2
+Version = 0.0.3
 
 // This is a list of Cosmoteer versions that this mod is known to be compatible with.
 // If this mod is turned on and it isn't known to be compatible with the version of Cosmoteer

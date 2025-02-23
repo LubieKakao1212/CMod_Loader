@@ -1,7 +1,6 @@
 ﻿using Cosmoteer;
 using Cosmoteer.Mods;
 using Halfling.IO;
-using Halfling.ObjectText;
 using HarmonyLib;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -266,35 +265,34 @@ namespace CMod_Helper {
         }
     }
 
-    [HarmonyPatch(typeof(ModInfo))]
-    [HarmonyPatch("ApplyPreLoadMods")]
-    [HarmonyPatch(new Type[] { typeof(OTFile) })]
-    static class Patch_ApplyPreLoadMods {
-        public static void Prefix() {
-            FileLogger.LogInfo("Patching Cosmoteer.Mods.ModInfo.ApplyPreLoadMods() [Prefix]");
+    //[HarmonyPatch(typeof(ModInfo))]
+    //[HarmonyPatch("ApplyPreLoadMods")]
+    //static class Patch_ApplyPreLoadMods {
+    //    public static void Prefix() {
+    //        FileLogger.LogInfo("Patching Cosmoteer.Mods.ModInfo.ApplyPreLoadMods() [Prefix]");
 
-            Main.TryLoadCMods("Pre_ApplyPreLoadMods");
-            FileLogger.Separator();
+    //        Main.TryLoadCMods("Pre_ApplyPreLoadMods");
 
-            var original = typeof(ModInfo).GetMethod("ApplyPreLoadMods", new Type[] { typeof(OTFile) });
-            Main.harmony.Unpatch(original, HarmonyPatchType.Prefix);
-        }
+    //        FileLogger.Separator();
 
-        public static void Postfix() {
-            FileLogger.LogInfo("Patching Cosmoteer.Mods.ModInfo.ApplyPreLoadMods() [Postfix]");
+    //        var original = typeof(ModInfo).GetMethod("ApplyPreLoadMods");
+    //        Main.harmony.Unpatch(original, HarmonyPatchType.Prefix);
+    //    }
 
-            Main.TryLoadCMods("Post_ApplyPreLoadMods");
+    //    public static void Postfix() {
+    //        FileLogger.LogInfo("Patching Cosmoteer.Mods.ModInfo.ApplyPreLoadMods() [Postfix]");
 
-            FileLogger.Separator();
+    //        Main.TryLoadCMods("Post_ApplyPreLoadMods");
 
-            var original = typeof(ModInfo).GetMethod("ApplyPreLoadMods", new Type[] { typeof(OTFile) });
-            Main.harmony.Unpatch(original, HarmonyPatchType.Postfix);
-        }
-    }
+    //        FileLogger.Separator();
+
+    //        var original = typeof(ModInfo).GetMethod("ApplyPreLoadMods");
+    //        Main.harmony.Unpatch(original, HarmonyPatchType.Postfix);
+    //    }
+    //}
 
     [HarmonyPatch(typeof(ModInfo))]
     [HarmonyPatch("ApplyPostLoadMods")]
-    [HarmonyPatch(new Type[] { })]
     static class Patch_ApplyPostLoadMods {
         public static void Prefix() {
             FileLogger.LogInfo("Patching Cosmoteer.Mods.ModInfo.ApplyPostLoadMods() [Prefix]");
@@ -303,7 +301,7 @@ namespace CMod_Helper {
 
             FileLogger.Separator();
 
-            var original = typeof(ModInfo).GetMethod("ApplyPostLoadMods", new Type[] { });
+            var original = typeof(ModInfo).GetMethod("ApplyPostLoadMods");
             Main.harmony.Unpatch(original, HarmonyPatchType.Prefix);
         }
 
@@ -314,7 +312,7 @@ namespace CMod_Helper {
 
             FileLogger.Separator();
 
-            var original = typeof(ModInfo).GetMethod("ApplyPostLoadMods", new Type[] { });
+            var original = typeof(ModInfo).GetMethod("ApplyPostLoadMods");
             Main.harmony.Unpatch(original, HarmonyPatchType.Postfix);
         }
     }
