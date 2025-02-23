@@ -21,6 +21,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Lib.Harmony" Version="2.3.5" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="9.0.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,6 +42,7 @@
 
 	<ItemGroup>
 		<Compile Remove="C:\Users\aliser\.nuget\packages\krafs.publicizer\2.2.1\contentfiles\cs\any\Publicizer\IgnoresAccessChecksToAttribute.cs"></Compile>
+		<Compile Remove="FileLogger - Copy.cs" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

@@ -14,22 +14,29 @@
     };
 
     static class FileLogger {
-        public static LogLevel logLevel = LogLevel.INFO;
+        public static LogLevel logLevel = LogLevel.DEBUG;
 
-        private static bool initialized = false;
-        private static StreamWriter logStreamWriter;
-        private static bool wasLastLogMessageWithLinebreak = true;
+        private static readonly string logfileFilename = "Logfile.log";
+
+        private static readonly string logfilePath = Path.Combine(Utils.GetPathToModRoot(), logfileFilename);
+        private static bool wasLogFileCleared = false;
 
         // Log a message with specified log level.
         public static void Log(LogLevel level, string msg) {
-            InitializeIfNeeded();
+            // ensure logfile is fresh every time
+            if(!wasLogFileCleared) {
+                if(Path.Exists(logfilePath)) {
+                    File.Delete(logfilePath);
+                }
+
+                wasLogFileCleared = true;
+            }
 
             DateTime now = DateTime.Now;
             string formattedTime = now.ToString("yyyy/MM/dd HH:mm:ss.ff");
             string logLevelStr = LogLevelToString(level);
 
-            logStreamWriter.WriteLine($"[{formattedTime}] [{logLevelStr}] {msg}");
-            logStreamWriter.Flush();
+            File.AppendAllText(logfilePath, $"[{formattedTime}] [{logLevelStr}] {msg}\n");
         }
 
         // Debug log level.
@@ -61,31 +68,7 @@
         /// Logs a separator for visual clarity.
         /// </summary>
         public static void Separator() {
-            InitializeIfNeeded();
-
             LogInfo("======================");
-        }
-
-        private static void InitializeIfNeeded() {
-            if(initialized) {
-                return;
-            }
-
-            string logfilePath = Path.Combine(Utils.GetPathToModRoot(), "CMod_Helper.log");
-            if(Path.Exists(logfilePath)) {
-                File.Delete(logfilePath);
-            }
-
-            logStreamWriter = new StreamWriter(logfilePath);
-            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
-
-            initialized = true;
-        }
-
-        private static void CurrentDomain_ProcessExit(object? sender, EventArgs e) {
-            LogInfo("Disposing");
-
-            logStreamWriter.Close();
         }
 
         private static string LogLevelToString(LogLevel logLevel) {
