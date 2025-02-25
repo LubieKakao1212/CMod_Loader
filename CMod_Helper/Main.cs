@@ -45,14 +45,8 @@ namespace CMod_Helper {
                 return;
             }
 
-            //string cwd = Utils.GetPathToCurrentDllDirectory();
-
-            //HelperLocation helperLocation = cwd.Contains("Saved Games") ? HelperLocation.LocalMods : HelperLocation.WorkshopMods;
-
-            //FileLogger.Separator();
             FileLogger.LogInfo("Discovering Mods:");
 
-            //List<(AbsolutePath absolutePath, string modInstallSourceStr, string modDirname)> cModsToLoad = new();
             foreach((AbsolutePath absolutePath, ModInstallSource modInstallSource, string workshopId) in ModInfo.GetAllModFolders()) {
                 string modInstallSourceStr;
                 switch(modInstallSource) {
@@ -96,19 +90,6 @@ namespace CMod_Helper {
             harmony = new Harmony("cmod_core.aliser.helper");
             var assembly = Assembly.GetExecutingAssembly();
             harmony.PatchAll(assembly);
-
-            //FileLogger.LogInfo("All done. Enjoy!");
-
-            //FileLog.Log("Loading Mods:");
-
-            //foreach((AbsolutePath absolutePath, string modInstallSourceStr, string modDirname) in cModsToLoad) {
-            //    FileLog.Log($"\t{modDirname} - Loading [{modInstallSourceStr}]");
-
-            //    string dllPath = Path.Combine(absolutePath, cModDllPathFromWithinCModDirectory);
-            //    LoadModDll(dllPath);
-            //}
-
-            //FileLog.Separator();
         }
 
         /// Checks whether given directory is a valid CMod directory.
@@ -154,8 +135,10 @@ namespace CMod_Helper {
 
                 // load mod assembly and find target namespace on first load call, save for further uses.
                 if(assembly == null || targetNamespace == null) {
-                    // LoadFile allows to load assemblies with the same name, but different path.
-                    // super useful for our use case since we have the same dll name for all the mods.
+                    // using this thing instal of simple Assembly.Load* due to
+                    // cmods having the same dll filename which one assembly method doesn't like, and second one doesn't load dependencies for.
+                    // this creates a separate context that loads the mods and a custom dependency loader loads them in.
+                    // custom dep. loader also allowed for the loading of Harmony dll from the Helper dir, which is pretty cool I must say.
                     ModAssemblyLoadContext assemblyLoadCtx = new ModAssemblyLoadContext();
                     assemblyLoadCtx.LoadFromAssemblyPath(dllAbsPath);
                     assemblyLoadCtx.Resolving += ModAssemblyLoadContext.ResolveDependencies;
@@ -204,6 +187,7 @@ namespace CMod_Helper {
 
     class ModAssemblyLoadContext : AssemblyLoadContext {
         /// <summary>
+        /// TODO
         /// Libs shipped with the Helper mod.
         /// 
         /// Can be used as dependency fallback in CMods.
@@ -265,6 +249,7 @@ namespace CMod_Helper {
         }
     }
 
+    // TODO not working currently due to how early the constructor gets called.
     //[HarmonyPatch(typeof(ModInfo))]
     //[HarmonyPatch("ApplyPreLoadMods")]
     //static class Patch_ApplyPreLoadMods {

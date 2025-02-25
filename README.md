@@ -1,108 +1,96 @@
-# Cosmoteer C# Mod Loader (aka CMod Loader)
+﻿# Cosmoteer C# Mod Loader (aka CMod Loader)
 
-### A utility for loading C# mods into Cosmoteer
+A utiliy mod that grants ability to load CMods (C# mods). CMod is just a DLL file written in C#, but packaged as a regular `.rules` file mod (with a few changes).
 
-_Heavily based on [EnhancedModLoader](https://github.com/C0dingschmuser/EnhancedModLoader) by [C0dingschmuser](https://github.com/C0dingschmuser) & [eamondo2](https://github.com/eamondo2)_
+_Heavily based on [EnhancedModLoader](https://github.com/C0dingschmuser/EnhancedModLoader) by [C0dingschmuser](https://github.com/C0dingschmuser) & [eamondo2](https://github.com/eamondo2). The initial injector part is used as-is as I'm to dumb to understand it and do my own rewrite._
 
-TODO:
-If the loader is present both locally (in user mods directory) and downloaded from the Workshop, the local version will be used.
+**DISCLAIMER: mods written in C# allow for a mod author to do basically anything on your device, so be cautios about which mods you install - do so at your own risk. Potential issues include, but not limited to: crashes, losing save files, breaking the game, executing malicious code.**
 
--   add workshop folder mods support
--   check out the install script, what is it
--   describe used project macros
+# Installation
 
-### --- Installation ---
+See the [Workshop page](https://steamcommunity.com/sharedfiles/filedetails/?id=3430188109) for details.
 
-1. Subscribe to this Mod on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2937901869)
-2. Navigate to your Cosmoteer Workshop directory.  
-   Usually it's `C:\Program Files (x86)\Steam\steamapps\workshop\content\799600\2937901869\`  
-   Note: `799600 is the ID for Cosmoteer, 2937901869 is the ID for this Mod`
-3. Run `Installer.bat` or install it manually by copying AVRT.dll from the Mod Folder to your Cosmoteer "Bin" path. This is the path where the Cosmoteer.exe lies.  
-   Example: `C:\Program Files (x86)\Steam\steamapps\common\Cosmoteer\Bin\`
-4. You're good to go! Now you can just subscribe to any Workshop EML Mod and it will load automatically  
-   (if it's enabled in the ingame mod manager).
-5. (Optional) You can also drop c# mod dlls into the `Bin\EML_Mods` folder to load them
-6. (Optional) If you want to test if everything works you can subscribe to the [EML Test Mod](https://steamcommunity.com/sharedfiles/filedetails/?id=2937811110).
-   This simple Mod will show a test window when you enter a new game.
+Must be installed with Helper mod (which is a part of this repo under `/CMod_Helper`): https://steamcommunity.com/sharedfiles/filedetails/?id=3430199112
 
-### --- How it works ---
+# Usage
+
+Subscribe to CMods and enable them in-game like regular mods. Restarting the game will load them in.
+
+# How to make a CMod
+
+See the [Example CMod](https://github.com/murolem/CMod_Example).
+
+# CMods Examples
+
+-   The [Example CMod](https://github.com/murolem/CMod_Example) demonstrates the basic usage.
+-   On the [Loader Workshop page](https://github.com/murolem/CMod_Loader), I will list new cool CMods.
+-   Other than that, search "CMod" in Workshop.
+
+# How it works
+
+_**Copy-pasted from [EnhancedModLoader](https://github.com/C0dingschmuser/EnhancedModLoader)**_
 
 AVRT.dll is a Library that Cosmoteer tries to load from it's local path that does not exist. Conveniently the local path is the first one that is being searched for this dll before searching in windows system folders and eventually loading it from there. I'm utilizing this to my advantage by copying the functionality of the original AVRT.dll + adding my own. This is called [Dll Hijacking](https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation/dll-hijacking).
 
 I'm using a slightly modified version of [StackOverflowExcept1on's .net core injector](https://github.com/StackOverflowExcept1on/net-core-injector) to manually load a c# helper dll, EML_Helper.dll, to get all current enabled mods (that contain dlls) and pass them back to the original c++ dll which then loads them.
 
-### --- Troubleshooting ---
+_**END Copy-pasted from EnhancedModLoader**_
 
-If you get the Error `EML_Helper.dll not found` check the `eml_config.ini` in your Cosmoteer installation directory. It must contain the path to the directory containing EML_Helper.dll and EML_Helper.runtimeconfig.json
+`dllmain.cpp` is compiled to `AVRT.dll`. Using the install script, it's copied to Cosmoteer's `Bin` directory.
+Cosmoteer loads it.
 
-If your game crashes check the `eml_log.txt` file in the bin directory and make sure it's not related to a mod you subscribed to. If there is no log file or if you are sure that the crash is not related to a specific mod but the Modloader itself repeat the Installation process (overwrite existing AVRT.dll in bin folder) and try again.
+For our added functionality, the Loader searches for the Helper mod in both local and Workshop mods' directories (in that order), and injects the found Helper DLL.
 
-### --- Developing C# Mods ---
+The Helper is the actual loader that searches for CMods in local and Workshop mods' directories and loads them in. Helper uses Harmony (as do CMods) to patch some of the game's methods (eg post-mod-load) to server as entrypoint for CMods. The Loader searches for the same hooks defined in CMods, and if found, invokes them in the patched methods.
 
-If you want to make your own c# mod dll, this will get you started:
+Both Loader and Helper are always loaded in, even if disabled as mods. But for actual CMods, the enabled/disabled state is respected, and disabled mods will not be loaded. Same goes for when launching the game in no-mods mode (Loader and Helper still get loaded in).
 
-**IMPORTANT INFORMATION: Cosmoteer uses .NET 7. Because of this, you cannot use Harmony since it does not Support .NET 7(yet).**  
-There is an [alpha version of Harmony](https://github.com/pardeike/Harmony/tree/feature/monomod-core) now that supports .NET 7 but you need to compile it yourself and i haven't tested it yet.
+# Troubleshooting
 
--   Use the [.NET 7 Version of EML](https://github.com/C0dingschmuser/EnhancedModLoader/releases) / Workshop version
--   Use Visual Studio C# Class Library for .NET or .NET Standard Preset
--   Use target SDK 7.0.200 (Cosmoteer & EML both use this version), specify this in a global.json in your Project Directory. [See more](https://learn.microsoft.com/en-us/dotnet/core/tools/global-json)
--   Use Runtime Framework Version 7.0.3
--   Change your .csproj TargetFramework to
+If something goes wrong with the loading process, an error window will likely be shown and CMods disabled for that session. Other than that, both Loader and Helper have their own logfiles.
 
-```csproj
-<TargetFramework>net7.0-windows</TargetFramework>
-```
+The Loader has it in Cosmoteer `Bin` directory. The Helper logfile can be found in the Helper mod folder → CMod.
 
--   Allow Unsafe Blocks
--   Set GenerateRuntimeConfigurationFiles to true
+If things keep crashing and erroring, the Loader can be uninstalled using the uninstall script that comes with it (see the Workshop page for details). This will also disable the Helper because it will no longer be loaded by the Loader.
 
-Important:
+# Developing & Contributing
 
--   Use an unique name for your Mod and ship your `.runtimeconfig.json` together with your dll (they must be in the same folder)
--   Entry Point namespace **MUST** have the same name as the dll file (but without the .dll)
--   Entry Point class **MUST** be named Main
--   Entry Point method **MUST** be static, named `InitializePatches` and have the `[UnmanagedCallersOnly]` attribute
--   Add Assembly References for Cosmoteer.dll and HalflingCore.dll from your Cosmoteer Bin Path  
-    **- Under Properties, change Local copy to false for both**
--   Since most of the Cosmoteer namespace is private, you need an assembly publicizer. I'm using [kraf's Publicizer](https://github.com/krafs/Publicizer).  
-    kraf's Publicizer specific .csproj settings: (replace user with your username)
+This is my first C++ project ever, and I barely know the language. I know some C#, so we don't come from nothing. So there's probably some horrible, gut-wrenching, heart-attacking, ship-to-pieces-blowing, stinky :3 code in there.
 
-```csproj
-<ItemGroup>
-  <Compile Remove="C:\Users\user\.nuget\packages\krafs.publicizer\2.2.1\contentfiles\cs\any\Publicizer\IgnoresAccessChecksToAttribute.cs" />
-</ItemGroup>
-<ItemGroup>
-  <Publicize Include="Cosmoteer" IncludeCompilerGeneratedMembers="false" />
-  <Publicize Include="HalflingCore" IncludeCompilerGeneratedMembers="false" />
-</ItemGroup>
-```
+By that I mean any improvements on the project are super heavily welcome! Especially on C++ part.
 
--   Add this to your .cs at the top:
+## Building
 
-```csharp
-[assembly: IgnoresAccessChecksTo("Cosmoteer")]
-[assembly: IgnoresAccessChecksTo("HalflingCore")]
+To help with some boring build things, a post-build script `IntegrateAfterBuild.ps1` exist for both Loader and Helper.
 
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
-    public class IgnoresAccessChecksToAttribute : Attribute
-    {
-        public IgnoresAccessChecksToAttribute(string assemblyName)
-        {
-            AssemblyName = assemblyName;
-        }
+After build, it will:
 
-        public string AssemblyName { get; }
-    }
-}
-```
+-   Generate a mod directory (**clearing** it if it exists).
+-   Copy build artifacts (build files) into the mod directory.
+-   Copy `static` folder as-is to the mod directory.
+-   Restart Cosmoteer (if enabled), with option to restart in dev mode.
 
-Since we cannot use Harmony, there are some workarounds required to mod Cosmoteer.  
-Here's [a simple example](https://github.com/C0dingschmuser/EML_TestMod) on how to get a simple loop, keyboard detection and custom window up and running.  
-For more advanced use, see source of my [Weapon Projectile Spawner Mod](https://github.com/C0dingschmuser/ProjectileSpawner)
+The script **requires** configuration to work.
 
-### --- License ---
+Check the project configuration before build - it's likely will contain some broken paths.
 
-[Released under MIT License](https://github.com/C0dingschmuser/EnhancedModLoader/blob/master/LICENSE.txt)
+## Contributing
+
+This is a list of things needed to improve the project, modders experience, etc. Anything goes.
+
+- New hooks. More hooks = more ways to entrypoint the game = more happy modders.
+- Code examples for the game's code. Various snippets and such, so the modders won't have to spent three days digging to figure out how to load an image. The [Wiki/Modding](https://cosmoteer.wiki.gg/wiki/Modding) section is one place to put them.
+- More stable load flow. Currently there's an artifical delay before injecting Helper which makes the load flow not super-relible.
+
+## Other things
+
+Some things from the [Example mod README](https://github.com/murolem/CMod_Example#Making_a_CMod) can be applied here (especially to the Helper part of the project, as it is kind of similar).
+
+# Links
+
+-   [CMod Loader in Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3430188109).
+-   [CMod Helper in Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3430199112).
+
+# Credits
+- [C0dingschmuser](https://github.com/C0dingschmuser) & [eamondo2](https://github.com/eamondo2) for making [EnhancedModLoader](https://github.com/C0dingschmuser/EnhancedModLoader) which this project is based upon.
+- Dj0z for inspiration and coming up with the name for mods (CMods).
