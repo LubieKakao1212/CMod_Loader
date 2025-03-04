@@ -90,6 +90,9 @@ namespace CMod_Helper {
             harmony = new Harmony("cmod_core.aliser.helper");
             var assembly = Assembly.GetExecutingAssembly();
             harmony.PatchAll(assembly);
+
+            //This is a temporary fix to load assemblies slightly earlier
+            TryLoadCMods("Initialize");
         }
 
         /// Checks whether given directory is a valid CMod directory.
